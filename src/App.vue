@@ -23,151 +23,104 @@
           @click="selectImage(index)"
         />
       </div>
+      source: Unsplash Gallery
       <div v-if="selectedImage != null" class="dig-in">Great job! Let's dig in.</div>
       <!-- <div>Let's start with the simplest one.</div> -->
-      <div v-if="selectedImage != null">
+      <div v-if="selectedImage != null" class="dcd">
         <div class="big">Dominant Color Descriptor</div>
         <div>
           Dominant Color Descriptor (DCD) is the. It provides the distribution of the most
           noticeable colors in the image.
         </div>
-        <div>Each pixel is encoded, using its representation in RGB space.</div>
-        <div id="visualization"></div>
-        <div>All the pixels together form a 3D space.</div>
-        <div id="space3dviz"></div>
-        <div id="space3dviz-circles"></div>
         <div>
-          This space is then clustered into a given number of clusters. From each cluster, one
-          'average' pixel is created. Colors of these pixels then form the Dominant Color
-          Descriptor. obrazek kolecek kolem tech par pixelu - tj stejny obrazek jako nad tim, ale s
-          koleckama obrazek par pixelu v kolecku a jejich kombinace v prumerny pixel
+          Each pixel is encoded, using its representation in RGB space. So three coordinates from 0
+          to 255.
+        </div>
+        <div id="pixel"></div>
+        <div>All the pixels together form a 3D space.</div>
+        <div id="rgb3d"></div>
+        <div>
+          This space is then clustered into a given number of clusters. Clustering technique
+          explanaition
+        </div>
+        <div id="rgb3d-circles" class="test2"></div>
+        <div>
+          From each cluster, one 'average' pixel is created. Colors of these pixels then form the
+          Dominant Color Descriptor. obrazek kolecek kolem tech par pixelu - tj stejny obrazek jako
+          nad tim, ale s koleckama obrazek par pixelu v kolecku a jejich kombinace v prumerny pixel
+        </div>
+        <div id="avg-pixel"></div>
+        This is done for all the clusters, and the average colors then form the Visual Color
+        Descriptor.
+        <div>obrazek example color descriptoru</div>
+        <div>
+          The number of clusters can be set by the user. The more clusters, the more detailed the
+          descriptor. Let's try it with your image.
+        </div>
+        <!-- Slider for selecting number of clusters -->
+        <div>
+          <label for="cluster-slider">Number of Clusters: {{ numberOfClusters }}</label>
+          <input
+            id="cluster-slider"
+            type="range"
+            min="3"
+            max="10"
+            v-model="numberOfClusters"
+            @input="updateClusters"
+          />
         </div>
       </div>
+      <!-- <div class="test">TEST DIV</div> -->
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onMounted } from 'vue'
 import { gsap } from 'gsap'
-import image1 from '@/assets/img150.jpg'
-import * as d3 from 'd3'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { drawPixel } from '@/scripts/drawPixel'
+import { draw3Drgb } from '@/scripts/draw3Drgb'
+import { drawPixelCircle } from './scripts/drawPixelCircle'
 
-const images = ref([
-  { src: image1, alt: 'Thumbnail 1' },
-  { src: image1, alt: 'Thumbnail 2' },
-  { src: image1, alt: 'Thumbnail 3' },
-  { src: image1, alt: 'Thumbnail 4' },
-])
+gsap.registerPlugin(ScrollTrigger)
+
+var images = ref([])
+
+const fetchImages = async () => {
+  const imagesArray = [
+    'orange-tulip--So60UAgCtU',
+    'bonfire-near-mountain-brqqSBSXPac',
+    'incandescent-bulb-is-turned-off-wtUsBOOfWf8',
+    'aerial-shot-of-road-surrounded-by-green-trees-qzgN45hseN0',
+    'minimalist-photography-of-gold-and-gray-polka-dot-wall-NrzgjowHNpU',
+    'gray-concrete-road-between-buildings-Sws6G1nFJ4E',
+    'aerial-view-of-golden-gate-bridge-RRNbMiPmTZY',
+  ]
+  console.log('Fetching images')
+  // Fetch images from Unsplash API
+  for (const imageId of imagesArray) {
+    console.log(imageId)
+    const response = await fetch(
+      `https://api.unsplash.com/photos/${imageId}?client_id=BIQAVulO8kpvryy7H_bxLG9y3sMiJz1i3zNpN1OG8P8`,
+    )
+    const data = await response.json()
+    console.log(data)
+    const img = data.urls.small
+    images.value.push({ src: img, alt: 'Thumbnail 5' })
+  }
+}
+
 const selectedImage = ref(null)
+//save the number of clusters
+const numberOfClusters = ref(3)
 
 const selectImage = (index) => {
   selectedImage.value = index
 }
 
-const render3DSpace = () => {
-  // Clear any existing content
-  d3.select('#space3dviz').selectAll('*').remove()
-
-  // Set up SVG dimensions
-  const width = 400
-  const height = 400
-  const svg = d3.select('#space3dviz').append('svg').attr('width', width).attr('height', height)
-
-  // Center of the 3D space
-  const centerX = width / 2
-  const centerY = height / 2
-
-  // Axes lengths
-  const axisLength = 150
-
-  // Add axes (simulating 3D perspective)
-  svg
-    .append('line') // X-axis
-    .attr('x1', centerX)
-    .attr('y1', centerY)
-    .attr('x2', centerX + axisLength)
-    .attr('y2', centerY)
-    .attr('stroke', 'black')
-    .attr('stroke-width', 2)
-
-  svg
-    .append('line') // Y-axis
-    .attr('x1', centerX)
-    .attr('y1', centerY)
-    .attr('x2', centerX)
-    .attr('y2', centerY - axisLength)
-    .attr('stroke', 'black')
-    .attr('stroke-width', 2)
-
-  svg
-    .append('line') // Z-axis
-    .attr('x1', centerX)
-    .attr('y1', centerY)
-    .attr('x2', centerX - axisLength / 1.5)
-    .attr('y2', centerY + axisLength / 1.5)
-    .attr('stroke', 'black')
-    .attr('stroke-width', 2)
-
-  // Add axis labels
-  svg
-    .append('text') // R-axis label
-    .attr('x', centerX + axisLength + 10) // Slightly offset for clarity
-    .attr('y', centerY)
-    .attr('font-size', '16px')
-    .attr('fill', 'red')
-    .text('R')
-
-  svg
-    .append('text') // G-axis label
-    .attr('x', centerX - 10) // Slightly offset to center the text
-    .attr('y', centerY - axisLength - 10) // Adjust for clarity
-    .attr('font-size', '16px')
-    .attr('fill', 'green')
-    .text('G')
-
-  svg
-    .append('text') // B-axis label
-    .attr('x', centerX - axisLength / 1.5 - 20) // Adjust based on perspective
-    .attr('y', centerY + axisLength / 1.5 + 10)
-    .attr('font-size', '16px')
-    .attr('fill', 'blue')
-    .text('B')
-
-  svg
-    .append('circle')
-    .attr('cx', 110) // Center x
-    .attr('cy', 250) // Center y
-    .attr('r', 35) // Radius
-    .attr('fill', 'blue') // Fill color
-    .attr('stroke', 'black') // Stroke color
-    .attr('stroke-width', 2) // Stroke width
-
-  // Add points in the pseudo-3D space
-  const points = [
-    { x: 50, y: -30, z: 20 },
-    { x: 80, y: -60, z: 50 },
-    { x: 100, y: -20, z: 70 },
-    { x: -50, y: -40, z: 80 },
-    { x: 150, y: 50, z: 60 },
-    { x: 150, y: 150, z: 150 },
-  ]
-
-  const colorsList = ['#321E14', '#503C32', '#641446', '#322850', 'red', '#969696']
-
-  points.forEach((point) => {
-    const projectedX = centerX + point.x - point.z * 0.5
-    const projectedY = centerY - point.y + point.z * 0.5
-
-    svg
-      .append('rect')
-      .attr('x', projectedX - 2.5)
-      .attr('y', projectedY - 2.5)
-      .attr('width', 10)
-      .attr('height', 10)
-      .attr('fill', colorsList[points.indexOf(point)])
-  })
+const updateClusters = () => {
+  console.log('Number of clusters:', numberOfClusters.value)
 }
 
 // Watch for changes in `selectedImage` to trigger animations
@@ -181,9 +134,30 @@ watch(selectedImage, async (newValue) => {
       { opacity: 0, y: 50 }, // Start state
       { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, // End state
     )
-    drawPixel()
-    render3DSpace()
+
+    drawPixel('#pixel')
+    draw3Drgb('#rgb3d', false)
+    draw3Drgb('#rgb3d-circles', true)
+    drawPixelCircle('#avg-pixel')
+    ScrollTrigger.create({
+      trigger: '.test2',
+      //start: 'top 20%',
+      //end: 'top 10%',
+      //scrub: false,
+      animation: gsap.fromTo('.test2', { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 5 }),
+    })
   }
+})
+
+onMounted(() => {
+  fetchImages()
+  ScrollTrigger.create({
+    trigger: '.test',
+    //start: 'top 20%',
+    //end: 'top 10%',
+    //scrub: false,
+    animation: gsap.fromTo('.test', { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 5 }),
+  })
 })
 </script>
 
@@ -191,15 +165,18 @@ watch(selectedImage, async (newValue) => {
 /* Thumbnails container */
 .thumbnails {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 10px;
   margin-top: 20px;
+  max-width: 850px;
 }
 
 /* Thumbnails */
 .thumbnails img {
-  width: 100px;
-  height: 100px;
+  flex: 1 0 calc(25% - 10px); /* 4 images per row */
+  max-width: 170px;
+  height: 150px;
   cursor: pointer;
   transition:
     opacity 0.5s ease,

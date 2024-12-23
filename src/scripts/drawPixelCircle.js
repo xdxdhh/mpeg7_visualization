@@ -1,33 +1,32 @@
 import * as d3 from 'd3'
 
-export function drawPixel(containerId) {
-  // Clear any existing SVG (prevents duplication)
+export function drawPixelCircle(containerId) {
   d3.select(containerId).selectAll('*').remove()
 
   // Set up SVG dimensions
   const width = 300
-  const height = 100
+  const height = 200
 
   // Create an SVG container
   const svg = d3.select(containerId).append('svg').attr('width', width).attr('height', height)
 
-  // Draw the square representing the pixel
+  // Draw a circle
   svg
-    .append('rect')
-    .attr('x', 20)
-    .attr('y', 20)
-    .attr('width', 60)
-    .attr('height', 60)
-    .attr('fill', '#aabbcc') // Pixel color
+    .append('circle')
+    .attr('cx', 50)
+    .attr('cy', 100)
+    .attr('r', 40)
+    .attr('fill', 'none') // Pixel color
     .attr('stroke', 'black')
+    .attr('stroke-width', 2)
 
   // Draw the arrow
   svg
     .append('line')
     .attr('x1', 120)
-    .attr('y1', 50)
+    .attr('y1', 100)
     .attr('x2', 175)
-    .attr('y2', 50)
+    .attr('y2', 100)
     .attr('stroke', 'black')
     .attr('stroke-width', 2)
     .attr('marker-end', 'url(#arrowhead)')
@@ -45,13 +44,4 @@ export function drawPixel(containerId) {
     .append('polygon')
     .attr('points', '0 0, 10 3.5, 0 7')
     .attr('fill', 'black')
-
-  // Add the RGB vector text
-  svg
-    .append('text')
-    .attr('x', 210)
-    .attr('y', 55)
-    .attr('font-size', '16px')
-    .attr('fill', 'black')
-    .text('(R, G, B)')
 }
