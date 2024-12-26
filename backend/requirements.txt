@@ -1,1 +1,5 @@
 fastapi[standard]
+requests
+numpy
+scikit-learn
+opencv-python

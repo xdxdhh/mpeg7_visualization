@@ -24,15 +24,16 @@ app.add_middleware(
 async def root():
     return {"message": "Hello World"}
 
-""" @app.post("/dominant_color")
-async def dominant_color():
-    return {"message": "Dominant Color"} """
 
 class ImageRequest(BaseModel):
     image_url: str
 
+class ImageResponse(BaseModel):
+    dominant_colors: list
+    processed_image: str
+
 @app.post("/dominant_color/")
-async def process_image(request: ImageRequest):
+async def process_image(request: ImageRequest) -> ImageResponse:
     try:
         # Fetch the image from the provided URL
         response = requests.get(request.image_url)
@@ -50,13 +51,6 @@ async def process_image(request: ImageRequest):
 
         km = KMeans(n_clusters=4)
         km.fit(pixels)
-
-        #colors = np.asarray(km.cluster_centers_, dtype='uint8')
-        #print(colors)
-
-        #percentage = np.asarray(np.unique(km.labels_, return_counts = True)[1], dtype='float32')
-        #percentage = percentage/pixels.shape[0]
-        #print(percentage)
 
         # Ensure colors and percentages are JSON-serializable
         colors = np.asarray(km.cluster_centers_, dtype='uint8').tolist()  # Convert to list

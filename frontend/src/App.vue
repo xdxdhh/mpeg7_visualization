@@ -3,7 +3,6 @@
     <header>MPEG-7 Visual Descriptors</header>
     <h2 class="big">What are they and how do they work?</h2>
     <h3 class="medium">Explaining by visuals by Diana Varšíková</h3>
-    <!-- <img src="@/assets/logo.png" alt="Logo" class="logo" id="logo" @load="onImageLoad" /> -->
     <main>
       <p>
         MPEG-7 is a multimedia content description standard. It provides a rich set of tools to
@@ -70,20 +69,17 @@
             @input="updateClusters"
           />
         </div>
+        <img
+          v-if="selectedImage !== null"
+          :src="images[selectedImage].src"
+          :alt="images[selectedImage].alt"
+        />
         <div>
-          <img
-            v-if="selectedImage !== null"
-            :src="logoImage"
-            :alt="images[selectedImage].alt"
-            class="selected-image"
-            ref="selectedImageElement"
-            id="selectedImageElementId"
-            crossorigin="anonymous"
-          />
-          <canvas ref="canvas" id="canvasId"></canvas>
-          pak rekonstrukce toho obrazku jen z dominantnich barev
+          We can then reconstruct the image using only the dominant colors by assigning each pixel
+          to the closest centroid.
         </div>
       </div>
+      <img id="reconstructedDominant" />
       <div v-if="selectedImage != null" class="scd">
         <div class="big">Scalable Color Descriptor</div>
         <div>
@@ -107,18 +103,18 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { drawPixel } from '@/scripts/drawPixel'
 import { draw3Drgb } from '@/scripts/draw3Drgb'
 import { drawPixelCircle } from './scripts/drawPixelCircle'
-import logo from '@/assets/logo.png'
 
-import cv from 'opencv.js'
+//import cv from 'opencv.js'
 gsap.registerPlugin(ScrollTrigger)
 
 var images = ref([])
 const dominantColors = ref([])
+const selectedImage = ref(null)
+const numberOfClusters = ref(3)
 
-const logoImage = logo
-
-const canvas = ref(null)
-const selectedImageElement = ref(null)
+const selectImage = (index) => {
+  selectedImage.value = index
+}
 
 const fetchImages = async () => {
   const imagesArray = [
@@ -146,30 +142,38 @@ const fetchImages = async () => {
   }
 }
 
-const selectedImage = ref(null)
-//save the number of clusters
-const numberOfClusters = ref(3)
-
-const selectImage = (index) => {
-  selectedImage.value = index
-}
-
 const updateClusters = () => {
   console.log('Number of clusters:', numberOfClusters.value)
 }
 
-const onImageLoad = () => {
-  let imgElement = document.getElementById('selectedImageElementId')
-  console.log('Image loaded:', imgElement)
-  // Now process the image with OpenCV.js
-  processImage()
+const getDominantColors = () => {
+  //get the src of selected image
+  console.log('getting dominant colors')
+  console.log('selected image:', selectedImage.value)
+  console.log('selected img: ', images.value[selectedImage.value])
+  const src = images.value[selectedImage.value].src
+  console.log(src)
+  fetch('http://0.0.0.0:8000/dominant_color', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image_url: src }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log(data)
+      const img = document.getElementById('reconstructedDominant')
+      img.src = `data:image/jpeg;base64,${data.processed_image}`
+      console.log('Dominant Colors:', data.dominant_colors)
+    })
+    .catch((error) => {
+      console.error('Error:', error)
+    })
 }
 
-// Watch for changes in `selectedImage` to trigger animations
 // Watch for changes in `selectedImage`
 watch(selectedImage, async (newValue) => {
   if (newValue !== null) {
-    // Wait for the DOM to update before animating
+    // DOM update before animation
     await nextTick()
     gsap.fromTo(
       '.dig-in',
@@ -189,95 +193,9 @@ watch(selectedImage, async (newValue) => {
       //scrub: false,
       animation: gsap.fromTo('.test2', { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 5 }),
     })
+    getDominantColors()
   }
 })
-
-const processImage = () => {
-  console.log('processing image')
-  //const img = selectedImageElement.value
-  //const ctx = canvas.value.getContext('2d')
-
-  //img.crossOrigin = 'anonymous' // Enable CORS
-
-  // Resize canvas to match the image
-  //canvas.value.width = img.width
-  //canvas.value.height = img.height
-
-  //console.log('Canvas size:', canvas.value.width, canvas.value.height)
-
-  // Draw the image onto the canvas
-  //ctx.drawImage(img, 0, 0)
-
-  //console.log('Image drawn')
-
-  //let imgElement = document.getElementById('canvasId')
-  //console.log('img element')
-  //console.log(imgElement)
-  try {
-    let imgElement = document.getElementById('selectedImageElementId')
-    console.log('Image loaded:', imgElement)
-    // Now process the image with OpenCV.js
-    processImage()
-  } catch (error) {
-    console.error('Error processing image:', error)
-  }
-  //let imgElement = document.getElementById('logo')
-  //let mat = cv.imread(imgElement)
-  //console.log(mat)
-
-  /* // Pass the canvas to OpenCV.js
-  if (!cv) {
-    console.error('OpenCV.js is not loaded!')
-    return
-  }
-  console.log('Canvas element:', canvas.value)
-  console.log('Canvas width:', canvas.value.width)
-  console.log('Canvas height:', canvas.value.height)
-  console.log(
-    'Is canvas element a valid HTMLCanvasElement?',
-    canvas.value instanceof HTMLCanvasElement,
-  )
-
-  const src = cv.imread(canvas.value)
-  console.log(src)
-  dominantColors.value = calculateDominantColors(src, 4) // 4 clusters
-  src.delete() */
-}
-
-const calculateDominantColors = (src, k = 4) => {
-  console.log('Calculating dominant colors')
-  if (!(src instanceof cv.Mat)) {
-    console.error('Invalid input: expected cv.Mat, received', src)
-    return []
-  }
-  const reshaped = src.reshape(1, src.rows * src.cols) // 1 row, (rows * cols) pixels
-  const data = reshaped.clone()
-  data.convertTo(data, cv.CV_32F) // Convert to float for kmeans
-
-  const criteria = new cv.TermCriteria(cv.TermCriteria_EPS + cv.TermCriteria_MAX_ITER, 100, 0.2)
-  const attempts = 10
-  const labels = new cv.Mat()
-  const centers = new cv.Mat()
-
-  cv.kmeans(data, k, labels, criteria, attempts, cv.KMEANS_RANDOM_CENTERS, centers)
-
-  // Extract colors from centers
-  const colors = []
-  for (let i = 0; i < k; i++) {
-    const r = Math.round(centers.floatAt(i, 0))
-    const g = Math.round(centers.floatAt(i, 1))
-    const b = Math.round(centers.floatAt(i, 2))
-    colors.push(`rgb(${r}, ${g}, ${b})`)
-  }
-
-  // Cleanup
-  reshaped.delete()
-  data.delete()
-  labels.delete()
-  centers.delete()
-
-  return colors
-}
 
 onMounted(() => {
   fetchImages()
