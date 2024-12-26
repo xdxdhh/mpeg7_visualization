@@ -3,6 +3,7 @@
     <header>MPEG-7 Visual Descriptors</header>
     <h2 class="big">What are they and how do they work?</h2>
     <h3 class="medium">Explaining by visuals by Diana Varšíková</h3>
+    <!-- <img src="@/assets/logo.png" alt="Logo" class="logo" id="logo" @load="onImageLoad" /> -->
     <main>
       <p>
         MPEG-7 is a multimedia content description standard. It provides a rich set of tools to
@@ -69,8 +70,32 @@
             @input="updateClusters"
           />
         </div>
+        <div>
+          <img
+            v-if="selectedImage !== null"
+            :src="logoImage"
+            :alt="images[selectedImage].alt"
+            class="selected-image"
+            ref="selectedImageElement"
+            id="selectedImageElementId"
+            crossorigin="anonymous"
+          />
+          <canvas ref="canvas" id="canvasId"></canvas>
+          pak rekonstrukce toho obrazku jen z dominantnich barev
+        </div>
       </div>
-      <!-- <div class="test">TEST DIV</div> -->
+      <div v-if="selectedImage != null" class="scd">
+        <div class="big">Scalable Color Descriptor</div>
+        <div>
+          It's a color histogram in HSV space encoded with Haar transform. Useful for image matching
+          and retrieval based on color. tj histogram s pevne definovanym poctem binu pak projde haar
+          transform a pak si vybiram kolik koeficientu chci
+        </div>
+      </div>
+      <div v-if="selectedImage != null" class="cld">
+        <div class="big">Color Layout Descriptor</div>
+        <div>spacial distribution of colors in image</div>
+      </div>
     </main>
   </div>
 </template>
@@ -82,10 +107,18 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { drawPixel } from '@/scripts/drawPixel'
 import { draw3Drgb } from '@/scripts/draw3Drgb'
 import { drawPixelCircle } from './scripts/drawPixelCircle'
+import logo from '@/assets/logo.png'
 
+import cv from 'opencv.js'
 gsap.registerPlugin(ScrollTrigger)
 
 var images = ref([])
+const dominantColors = ref([])
+
+const logoImage = logo
+
+const canvas = ref(null)
+const selectedImageElement = ref(null)
 
 const fetchImages = async () => {
   const imagesArray = [
@@ -100,13 +133,15 @@ const fetchImages = async () => {
   console.log('Fetching images')
   // Fetch images from Unsplash API
   for (const imageId of imagesArray) {
-    console.log(imageId)
+    //console.log(imageId)
     const response = await fetch(
       `https://api.unsplash.com/photos/${imageId}?client_id=BIQAVulO8kpvryy7H_bxLG9y3sMiJz1i3zNpN1OG8P8`,
     )
     const data = await response.json()
-    console.log(data)
+    //console.log(data)
     const img = data.urls.small
+    console.log(imageId)
+    console.log(img)
     images.value.push({ src: img, alt: 'Thumbnail 5' })
   }
 }
@@ -121,6 +156,13 @@ const selectImage = (index) => {
 
 const updateClusters = () => {
   console.log('Number of clusters:', numberOfClusters.value)
+}
+
+const onImageLoad = () => {
+  let imgElement = document.getElementById('selectedImageElementId')
+  console.log('Image loaded:', imgElement)
+  // Now process the image with OpenCV.js
+  processImage()
 }
 
 // Watch for changes in `selectedImage` to trigger animations
@@ -139,6 +181,7 @@ watch(selectedImage, async (newValue) => {
     draw3Drgb('#rgb3d', false)
     draw3Drgb('#rgb3d-circles', true)
     drawPixelCircle('#avg-pixel')
+    //processImage()
     ScrollTrigger.create({
       trigger: '.test2',
       //start: 'top 20%',
@@ -149,15 +192,95 @@ watch(selectedImage, async (newValue) => {
   }
 })
 
+const processImage = () => {
+  console.log('processing image')
+  //const img = selectedImageElement.value
+  //const ctx = canvas.value.getContext('2d')
+
+  //img.crossOrigin = 'anonymous' // Enable CORS
+
+  // Resize canvas to match the image
+  //canvas.value.width = img.width
+  //canvas.value.height = img.height
+
+  //console.log('Canvas size:', canvas.value.width, canvas.value.height)
+
+  // Draw the image onto the canvas
+  //ctx.drawImage(img, 0, 0)
+
+  //console.log('Image drawn')
+
+  //let imgElement = document.getElementById('canvasId')
+  //console.log('img element')
+  //console.log(imgElement)
+  try {
+    let imgElement = document.getElementById('selectedImageElementId')
+    console.log('Image loaded:', imgElement)
+    // Now process the image with OpenCV.js
+    processImage()
+  } catch (error) {
+    console.error('Error processing image:', error)
+  }
+  //let imgElement = document.getElementById('logo')
+  //let mat = cv.imread(imgElement)
+  //console.log(mat)
+
+  /* // Pass the canvas to OpenCV.js
+  if (!cv) {
+    console.error('OpenCV.js is not loaded!')
+    return
+  }
+  console.log('Canvas element:', canvas.value)
+  console.log('Canvas width:', canvas.value.width)
+  console.log('Canvas height:', canvas.value.height)
+  console.log(
+    'Is canvas element a valid HTMLCanvasElement?',
+    canvas.value instanceof HTMLCanvasElement,
+  )
+
+  const src = cv.imread(canvas.value)
+  console.log(src)
+  dominantColors.value = calculateDominantColors(src, 4) // 4 clusters
+  src.delete() */
+}
+
+const calculateDominantColors = (src, k = 4) => {
+  console.log('Calculating dominant colors')
+  if (!(src instanceof cv.Mat)) {
+    console.error('Invalid input: expected cv.Mat, received', src)
+    return []
+  }
+  const reshaped = src.reshape(1, src.rows * src.cols) // 1 row, (rows * cols) pixels
+  const data = reshaped.clone()
+  data.convertTo(data, cv.CV_32F) // Convert to float for kmeans
+
+  const criteria = new cv.TermCriteria(cv.TermCriteria_EPS + cv.TermCriteria_MAX_ITER, 100, 0.2)
+  const attempts = 10
+  const labels = new cv.Mat()
+  const centers = new cv.Mat()
+
+  cv.kmeans(data, k, labels, criteria, attempts, cv.KMEANS_RANDOM_CENTERS, centers)
+
+  // Extract colors from centers
+  const colors = []
+  for (let i = 0; i < k; i++) {
+    const r = Math.round(centers.floatAt(i, 0))
+    const g = Math.round(centers.floatAt(i, 1))
+    const b = Math.round(centers.floatAt(i, 2))
+    colors.push(`rgb(${r}, ${g}, ${b})`)
+  }
+
+  // Cleanup
+  reshaped.delete()
+  data.delete()
+  labels.delete()
+  centers.delete()
+
+  return colors
+}
+
 onMounted(() => {
   fetchImages()
-  ScrollTrigger.create({
-    trigger: '.test',
-    //start: 'top 20%',
-    //end: 'top 10%',
-    //scrub: false,
-    animation: gsap.fromTo('.test', { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 5 }),
-  })
 })
 </script>
 
