@@ -203,11 +203,11 @@ const fetchImages = async () => {
   for (const imageId of imagesArray) {
     //console.log(imageId)
     const response = await fetch(
-      `https://api.unsplash.com/photos/${imageId}?client_id=BIQAVulO8kpvryy7H_bxLG9y3sMiJz1i3zNpN1OG8P8&&fm=jpg&w=400&fit=max`
+      `https://api.unsplash.com/photos/${imageId}?client_id=BIQAVulO8kpvryy7H_bxLG9y3sMiJz1i3zNpN1OG8P8`
     );
     const data = await response.json();
     //console.log(data)
-    const img = data.urls.small;
+    const img = data.urls.raw + "&w=384&h=256&fit=crop";
     console.log(imageId);
     console.log(img);
     images.value.push({ src: img, alt: "Thumbnail 5" });

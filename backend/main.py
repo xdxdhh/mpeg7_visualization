@@ -126,7 +126,7 @@ async def color_layout_descriptor_grid(request : ImageRequest):
     processed_img = np.zeros_like(image)
 
     # Loop through the image in steps of 8x8 blocks
-    block_size = 8
+    block_size = 32
     for y in range(0, height, block_size):
         for x in range(0, width, block_size):
             # Define the block

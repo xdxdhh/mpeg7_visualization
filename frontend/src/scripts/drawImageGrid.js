@@ -7,8 +7,8 @@ export function drawImageGrid(containerId, selectedImage) {
   d3.select(containerId).selectAll("*").remove();
 
   // SVG Dimensions
-  const width = 380;
-  const height = 254;
+  const width = 384;
+  const height = 256;
 
   const svg = d3
     .select(containerId)
@@ -16,8 +16,8 @@ export function drawImageGrid(containerId, selectedImage) {
     .attr("width", width)
     .attr("height", height);
 
-  const rows = 8; // Grid size
-  const cols = 8;
+  const rows = 8;
+  const cols = 12;
   const cellWidth = width / cols;
   const cellHeight = height / rows;
 
