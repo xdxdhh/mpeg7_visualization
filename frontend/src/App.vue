@@ -44,13 +44,13 @@
         </div>
         <div>
           Each pixel in the image is represented by its
-          <span style="font-weight: bold">RGB</span>values (Red, Green, Blue),
-          which range from 0 to 255. These three color components together form
-          a point in a 3D RGB color space.
+          <span style="font-weight: bold">RGB</span> values (Red, Green, Blue),
+          which range from 0 to 255. These three values together form a single
+          point in the 3D RGB color space.
         </div>
         <div id="pixel"></div>
         <div>
-          The entire image is made up of a large number of pixels (for our case
+          The entire image is made up of a large number of pixels (in our case
           of 400 x 257 image it comes to 102800 pixels). If you imagine every
           pixel's color as a point in 3D space, the entire image forms a cloud
           of points in this RGB space.
@@ -67,7 +67,7 @@
         <div>
           From each cluster, one 'average' pixel is created, this pixel is
           called the
-          <span style="font-weight: bold">centroid</span> of the cluster and
+          <span style="font-weight: bold">centroid</span> of the cluster and it
           captures the "average" color of all the pixels that belong to that
           cluster. These average colors are then used to form the Dominant Color
           Descriptor (DCD).
@@ -78,8 +78,9 @@
         the number of pixels it contains.
         <div>obrazek example color descriptoru</div>
         <div>
-          The number of clusters can be set by the user. The more clusters, the
-          more detailed the descriptor. Let's try it with your image.
+          We can usually choose the number of clusters we want to group the
+          points into. The more clusters, the more detailed the descriptor.
+          Let's try it with your image.
         </div>
         <!-- Slider for selecting number of clusters -->
         <div>
@@ -109,14 +110,15 @@
       <img id="reconstructedDominant" />
       <div v-if="selectedImage != null" class="scd">
         <div class="big">Scalable Color Descriptor</div>
-        <div>
+        <!-- <div>
           It's a color histogram in HSV space encoded with Haar transform.
           Useful for image matching and retrieval based on color. tj histogram s
           pevne definovanym poctem binu pak projde haar transform a pak si
           vybiram kolik koeficientu chci
-        </div>
+        </div> -->
         <div>
-          This time, the pixels are represented not in RGB space, but in HSV
+          This time, the pixels are represented not in the RGB space, but in
+          <span style="font-weight: bold">HSV</span>
           (Hue, Saturation, Value) space. Hue represents the type of color (e.g.
           red, green, blue), Saturation represents the intensity of the color,
           and Value represents its brightness.
@@ -135,7 +137,29 @@
       </div>
       <div v-if="selectedImage != null" class="cld">
         <div class="big">Color Layout Descriptor</div>
-        <div>spacial distribution of colors in image</div>
+        <div>
+          Imagine you want to describe an image not just by its colors but also
+          by where those colors appear. For example, if you have an image of a
+          sunset, you wouldn't just say "orange and blue"—you'd also want to
+          capture that orange is at the bottom and blue is at the top. The
+          <span style="font-weight: bold">Color Layout Descriptor</span> (CLD)
+          helps do exactly that.
+        </div>
+        <div>
+          Instead of analyzing every single pixel (which would be too much
+          data), we split the image into a grid of blocks—for example, 8x8
+          blocks. Each block represents a small region of the image. Think of
+          this like reducing an HD image into a very low-resolution version
+          where each block is a single color.
+        </div>
+        <div id="image-grid"></div>
+        <div>
+          For each block, we calculate the average color—essentially compressing
+          all the pixels in the block into a single color value. So, if a block
+          contains mostly shades of blue, we replace it with a single average
+          blue color.
+        </div>
+        <img id="gridAvg" />
       </div>
     </main>
   </div>
@@ -149,6 +173,7 @@ import { drawPixel } from "@/scripts/drawPixel";
 import { draw3Drgb } from "@/scripts/draw3Drgb";
 import { drawPixelCircle } from "./scripts/drawPixelCircle";
 import { drawDominantColors } from "./scripts/drawDominantColors";
+import { drawImageGrid } from "./scripts/drawImageGrid";
 
 //import cv from 'opencv.js'
 gsap.registerPlugin(ScrollTrigger);
@@ -178,7 +203,7 @@ const fetchImages = async () => {
   for (const imageId of imagesArray) {
     //console.log(imageId)
     const response = await fetch(
-      `https://api.unsplash.com/photos/${imageId}?client_id=BIQAVulO8kpvryy7H_bxLG9y3sMiJz1i3zNpN1OG8P8`
+      `https://api.unsplash.com/photos/${imageId}?client_id=BIQAVulO8kpvryy7H_bxLG9y3sMiJz1i3zNpN1OG8P8&&fm=jpg&w=400&fit=max`
     );
     const data = await response.json();
     //console.log(data)
@@ -197,7 +222,6 @@ const updateClusters = () => {
 const getDominantColors = () => {
   //get the src of selected image
   console.log("getting dominant colors");
-  console.log("selected image:", selectedImage.value);
   console.log("selected img: ", images.value[selectedImage.value]);
   const src = images.value[selectedImage.value].src;
   console.log(src);
@@ -214,6 +238,25 @@ const getDominantColors = () => {
       console.log("Dominant Colors:", data.dominant_colors);
       dominantColors.value = data.dominant_colors;
       drawDominantColors("#dominant-colors", dominantColors.value);
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+    });
+};
+
+const getColorLayoutDescriptor = () => {
+  console.log("getting color layout descriptor");
+  const src = images.value[selectedImage.value].src;
+  fetch("http://0.0.0.0:8000/color_layout_grid", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image_url: src }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log(data);
+      const img = document.getElementById("gridAvg");
+      img.src = `data:image/jpeg;base64,${data.processed_image}`;
     })
     .catch((error) => {
       console.error("Error:", error);
@@ -248,6 +291,8 @@ watch(selectedImage, async (newValue) => {
       ),
     });
     getDominantColors();
+    drawImageGrid("#image-grid", images.value[selectedImage.value].src);
+    getColorLayoutDescriptor();
   }
 });
 

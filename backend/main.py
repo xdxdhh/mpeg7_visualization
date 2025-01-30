@@ -27,14 +27,17 @@ async def root():
 
 class ImageRequest(BaseModel):
     image_url: str
+
+class ClusterImageRequest(ImageRequest):
     clusters: int
 
-class ImageResponse(BaseModel):
+class ClusterImageResponse(BaseModel):
     dominant_colors: list
     processed_image: str
+    
 
 @app.post("/dominant_color/")
-async def process_image(request: ImageRequest) -> ImageResponse:
+async def process_image(request: ClusterImageRequest) -> ClusterImageResponse:
     try:
         # Fetch the image from the provided URL
         response = requests.get(request.image_url)
@@ -93,8 +96,56 @@ async def process_image(request: ImageRequest) -> ImageResponse:
 
         return response_data
 
-        # Return the processed image
-        #return StreamingResponse(io_buf, media_type="image/jpeg")
 
     except requests.RequestException as e:
         raise HTTPException(status_code=400, detail=f"Error fetching image: {e}")
+    
+
+def get_average_color(block):
+    # Calculate the average color in BGR format
+    avg_color = np.mean(block, axis=(0, 1))  # Take mean along rows and columns
+    return tuple(avg_color)
+
+
+@app.post("/color_layout_grid/")
+async def color_layout_descriptor_grid(request : ImageRequest):
+    print("Color Layout Descriptor")
+    response = requests.get(request.image_url)
+    response.raise_for_status()
+
+    image_data = response.content
+
+    np_arr = np.frombuffer(image_data, np.uint8)
+    image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+    # Get the image dimensions
+    height, width, _ = image.shape
+    print("Image Shape: ", image.shape)
+
+    # Create a new image that will be filled with the average colors of each block
+    processed_img = np.zeros_like(image)
+
+    # Loop through the image in steps of 8x8 blocks
+    block_size = 8
+    for y in range(0, height, block_size):
+        for x in range(0, width, block_size):
+            # Define the block
+            block = image[y:y+block_size, x:x+block_size]
+            
+            # Compute the average color of the block
+            avg_color = get_average_color(block)
+            
+            # Fill the corresponding block in the processed image with the average color
+            processed_img[y:y+block_size, x:x+block_size] = avg_color
+
+    # Encode the processed image to JPEG
+        _, buffer = cv2.imencode('.jpg', processed_img)
+
+        image_base64 = base64.b64encode(buffer).decode('utf-8')
+
+        response_data = {
+            "processed_image": image_base64
+        }
+    
+    return response_data
+
