@@ -1,6 +1,7 @@
 import * as d3 from 'd3'
 
 export function drawDominantColors(containerId, colorsData) {
+  console.log('drawDominantColors', colorsData)
   d3.select(containerId).selectAll('*').remove()
 
   // dims

@@ -5,9 +5,12 @@
     <h3 class="medium">Explaining by visuals by Diana Varšíková</h3>
     <main>
       <p>
-        MPEG-7 is a multimedia content description standard. It provides a rich set of tools to
-        describe the structure and semantics of multimedia data, enabling efficient searching,
-        retrieval, and use.
+        MPEG-7 is a multimedia content description standard designed to provide a structured and
+        rich representation of multimedia data, such as images, audio, and video. It serves as a
+        framework for efficiently organizing and retrieving multimedia content, making it easier to
+        search and analyze large datasets. In the context of images, MPEG-7 defines a set of
+        <span style="font-weight: bold">image descriptors</span>, which are features that describe
+        and identify visual characteristics of images.
       </p>
       <p class="medium">It all begins with an image...Pick one.</p>
       <div class="thumbnails">
@@ -29,29 +32,38 @@
       <div v-if="selectedImage != null" class="dcd">
         <div class="big">Dominant Color Descriptor</div>
         <div>
-          Dominant Color Descriptor (DCD) is the. It provides the distribution of the most
-          noticeable colors in the image.
+          The Dominant Color Descriptor (DCD) is one of the key (and also the simplest ones) image
+          descriptors defined in MPEG-7. It focuses on identifying the most significant colors in
+          the image and //representing the color distribution//.
         </div>
         <div>
-          Each pixel is encoded, using its representation in RGB space. So three coordinates from 0
-          to 255.
+          Each pixel in the image is represented by its
+          <span style="font-weight: bold">RGB</span>values (Red, Green, Blue), which range from 0 to
+          255. These three color components together form a point in a 3D RGB color space.
         </div>
         <div id="pixel"></div>
-        <div>All the pixels together form a 3D space.</div>
+        <div>
+          The entire image is made up of a large number of pixels (for our case of 400 x 257 image
+          it comes to 102800 pixels). If you imagine every pixel's color as a point in 3D space, the
+          entire image forms a cloud of points in this RGB space.
+        </div>
         <div id="rgb3d"></div>
         <div>
-          This space is then clustered into a given number of clusters. Clustering technique
-          explanaition
+          //This space is then clustered into a given number of clusters.// To identify the dominant
+          colors, we need to group similar colors together. This is done using a technique called
+          clustering. Clustering algorithms group the pixels into a fixed number of so called
+          clusters, based on their color similarity. //chci rict se space je clustere
         </div>
         <div id="rgb3d-circles" class="test2"></div>
         <div>
-          From each cluster, one 'average' pixel is created. Colors of these pixels then form the
-          Dominant Color Descriptor. obrazek kolecek kolem tech par pixelu - tj stejny obrazek jako
-          nad tim, ale s koleckama obrazek par pixelu v kolecku a jejich kombinace v prumerny pixel
+          From each cluster, one 'average' pixel is created, this pixel is called the
+          <span style="font-weight: bold">centroid</span> of the cluster and captures the "average"
+          color of all the pixels that belong to that cluster. These average colors are then used to
+          form the Dominant Color Descriptor (DCD).
         </div>
         <div id="avg-pixel"></div>
         This is done for all the clusters, and the average colors then form the Visual Color
-        Descriptor.
+        Descriptor. The importance of the cluster is determined by the number of pixels it contains.
         <div>obrazek example color descriptoru</div>
         <div>
           The number of clusters can be set by the user. The more clusters, the more detailed the
@@ -63,8 +75,8 @@
           <input
             id="cluster-slider"
             type="range"
-            min="3"
-            max="10"
+            min="2"
+            max="8"
             v-model="numberOfClusters"
             @input="updateClusters"
           />
@@ -74,6 +86,7 @@
           :src="images[selectedImage].src"
           :alt="images[selectedImage].alt"
         />
+        <div id="dominant-colors"></div>
         <div>
           We can then reconstruct the image using only the dominant colors by assigning each pixel
           to the closest centroid.
@@ -86,6 +99,22 @@
           It's a color histogram in HSV space encoded with Haar transform. Useful for image matching
           and retrieval based on color. tj histogram s pevne definovanym poctem binu pak projde haar
           transform a pak si vybiram kolik koeficientu chci
+        </div>
+        <div>
+          This time, the pixels are represented not in RGB space, but in HSV (Hue, Saturation,
+          Value) space.
+           Hue represents the type of color (e.g. red, green, blue), Saturation
+          represents the intensity of the color, and Value represents its brightness.
+        </div>
+        <img src="./assets/hsv.svg" />
+        <div>
+          The HSV space is divided into a fixed number of bins, and each pixel is assigned to one of them,
+          based on its proximity in HSV space.
+          //The image colors are simplified into a limited set of representative colors in HSV space.
+        </div>
+        <!-- <div>obrazek zjednoduseny na kvantizovane pixely</div> -->
+        <div>
+          The number of pixels that belong to each bin then form a histogram.
         </div>
       </div>
       <div v-if="selectedImage != null" class="cld">
@@ -103,6 +132,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { drawPixel } from '@/scripts/drawPixel'
 import { draw3Drgb } from '@/scripts/draw3Drgb'
 import { drawPixelCircle } from './scripts/drawPixelCircle'
+import { drawDominantColors } from './scripts/drawDominantColors'
 
 //import cv from 'opencv.js'
 gsap.registerPlugin(ScrollTrigger)
@@ -125,6 +155,7 @@ const fetchImages = async () => {
     'minimalist-photography-of-gold-and-gray-polka-dot-wall-NrzgjowHNpU',
     'gray-concrete-road-between-buildings-Sws6G1nFJ4E',
     'aerial-view-of-golden-gate-bridge-RRNbMiPmTZY',
+    'multicolored-wall-in-shallow-focus-photography-jbtfM0XBeRc',
   ]
   console.log('Fetching images')
   // Fetch images from Unsplash API
@@ -144,6 +175,7 @@ const fetchImages = async () => {
 
 const updateClusters = () => {
   console.log('Number of clusters:', numberOfClusters.value)
+  getDominantColors()
 }
 
 const getDominantColors = () => {
@@ -156,7 +188,7 @@ const getDominantColors = () => {
   fetch('http://0.0.0.0:8000/dominant_color', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ image_url: src }),
+    body: JSON.stringify({ image_url: src, clusters: numberOfClusters.value }),
   })
     .then((response) => response.json())
     .then((data) => {
@@ -164,6 +196,8 @@ const getDominantColors = () => {
       const img = document.getElementById('reconstructedDominant')
       img.src = `data:image/jpeg;base64,${data.processed_image}`
       console.log('Dominant Colors:', data.dominant_colors)
+      dominantColors.value = data.dominant_colors
+      drawDominantColors('#dominant-colors', dominantColors.value)
     })
     .catch((error) => {
       console.error('Error:', error)

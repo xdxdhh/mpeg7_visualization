@@ -27,6 +27,7 @@ async def root():
 
 class ImageRequest(BaseModel):
     image_url: str
+    clusters: int
 
 class ImageResponse(BaseModel):
     dominant_colors: list
@@ -49,7 +50,9 @@ async def process_image(request: ImageRequest) -> ImageResponse:
         print(pixels.shape)
         print(image.shape)
 
-        km = KMeans(n_clusters=4)
+        print(request.clusters)
+
+        km = KMeans(n_clusters=request.clusters)
         km.fit(pixels)
 
         # Ensure colors and percentages are JSON-serializable
@@ -82,8 +85,8 @@ async def process_image(request: ImageRequest) -> ImageResponse:
         # Prepare the response
         response_data = {
             "dominant_colors": [
-                {"color": colors[ix], "percentage": percentage[ix]}
-                for ix in range(len(colors))
+                {"color": dominance[ix][1], "percentage": dominance[ix][0]}
+                for ix in range(len(dominance))
             ],
             "processed_image": image_base64
         }
