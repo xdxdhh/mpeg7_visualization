@@ -31,6 +31,9 @@ class ImageRequest(BaseModel):
 class ClusterImageRequest(ImageRequest):
     clusters: int
 
+class ColorLayoutImageRequest(ImageRequest):
+    dct: int #number of dct coefficients
+
 class ClusterImageResponse(BaseModel):
     dominant_colors: list
     processed_image: str
@@ -149,3 +152,76 @@ async def color_layout_descriptor_grid(request : ImageRequest):
     
     return response_data
 
+
+def zigzag_traversal(matrix):
+    """ Get elements in zigzag order (used to extract low-frequency DCT coefficients) """
+    rows, cols = matrix.shape
+    result = []
+    sum_to_indices = {}
+    
+    # Collect indices in zigzag order
+    for i in range(rows + cols - 1):
+        sum_to_indices[i] = []
+    
+    for r in range(rows):
+        for c in range(cols):
+            sum_to_indices[r + c].append((r, c))
+    
+    # Extract values in zigzag order
+    for k, indices in sum_to_indices.items():
+        if k % 2 == 0:
+            indices.reverse()  # Reverse even-indexed diagonals for correct zigzag order
+        for r, c in indices:
+            result.append(matrix[r, c])
+    
+    return np.array(result)
+
+    
+@app.post("/color_layout_descriptor/")
+async def color_layout_descriptor(request: ColorLayoutImageRequest):
+    """ Compute the Color Layout Descriptor (CLD) for an image """
+
+    num_coefficients = request.dct
+
+    response = requests.get(request.image_url)
+    response.raise_for_status()
+
+    image_data = response.content
+
+    np_arr = np.frombuffer(image_data, np.uint8)
+    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    img = cv2.resize(img, (64, 64))
+    
+    # YCbCr
+    img_ycbcr = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
+
+    # channels
+    Y, Cb, Cr = cv2.split(img_ycbcr)
+
+    block_size = 8
+    num_blocks = 8  # 8x8 blocks
+    avg_Y = np.zeros((num_blocks, num_blocks))
+    avg_Cb = np.zeros((num_blocks, num_blocks))
+    avg_Cr = np.zeros((num_blocks, num_blocks))
+
+    # avg color per block
+    for i in range(num_blocks):
+        for j in range(num_blocks):
+            y_start, y_end = i * block_size, (i + 1) * block_size
+            x_start, x_end = j * block_size, (j + 1) * block_size
+            
+            avg_Y[i, j] = np.mean(Y[y_start:y_end, x_start:x_end])
+            avg_Cb[i, j] = np.mean(Cb[y_start:y_end, x_start:x_end])
+            avg_Cr[i, j] = np.mean(Cr[y_start:y_end, x_start:x_end])
+
+    # Discrete Cosine Transform (DCT)
+    dct_Y = cv2.dct(avg_Y)
+    dct_Cb = cv2.dct(avg_Cb)
+    dct_Cr = cv2.dct(avg_Cr)
+
+    # Coefficients in zigzag order -> keep the first `num_coefficients`
+    zigzag_Y = zigzag_traversal(dct_Y)[:num_coefficients]
+    zigzag_Cb = zigzag_traversal(dct_Cb)[:num_coefficients]
+    zigzag_Cr = zigzag_traversal(dct_Cr)[:num_coefficients]
+    
+    return {"y": zigzag_Y.tolist(), "cb": zigzag_Cb.tolist(), "cr": zigzag_Cr.tolist()}

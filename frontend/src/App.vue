@@ -29,9 +29,7 @@
         />
       </div>
       source: Unsplash Gallery
-      <div v-if="selectedImage != null" class="dig-in">
-        Great job! Let's dig in.
-      </div>
+      <div v-if="selectedImage != null" class="dig-in">Let's dig in.</div>
       <!-- <div>Let's start with the simplest one.</div> -->
       <div v-if="selectedImage != null" class="dcd">
         <div class="big">Dominant Color Descriptor</div>
@@ -80,22 +78,21 @@
         <div>
           We can usually choose the number of clusters we want to group the
           points into. The more clusters, the more detailed the descriptor.
-          Let's try it with your image.
         </div>
+        <p class="medium">Try it with your image.</p>
         <!-- Slider for selecting number of clusters -->
         <div>
-          <label for="cluster-slider"
-            >Number of Clusters: {{ numberOfClusters }}</label
-          >
           <input
+            class="slider"
             id="cluster-slider"
             type="range"
             min="2"
             max="8"
             v-model="numberOfClusters"
-            @input="updateClusters"
+            @input="getDominantColors"
           />
         </div>
+        <div>Number of Clusters: {{ numberOfClusters }}</div>
         <img
           v-if="selectedImage !== null"
           :src="images[selectedImage].src"
@@ -160,6 +157,28 @@
           blue color.
         </div>
         <img id="gridAvg" />
+        <div>
+          <span style="font-weight: bold">YCbCr</span>, which separates
+          brightness (luma) from color (chroma), was created due to backwards
+          compatibility, so that old tvs could ignore the color part Y is
+          essentially greyscale copy of the original one
+        </div>
+        <div>
+          <input
+            class="slider"
+            id="dct-coeffs-slider"
+            type="range"
+            min="2"
+            max="6"
+            v-model="dctCoeffs"
+            @input="getColorLayoutDescriptor"
+          />
+        </div>
+        <div>Number of DCT Coefficients: {{ dctCoeffs }}</div>
+        <div>
+          Y {{ colorLayoutDescriptor["y"] }} Cb1
+          {{ colorLayoutDescriptor["cb"] }} Cr {{ colorLayoutDescriptor["cr"] }}
+        </div>
       </div>
     </main>
   </div>
@@ -179,9 +198,11 @@ import { drawImageGrid } from "./scripts/drawImageGrid";
 gsap.registerPlugin(ScrollTrigger);
 
 var images = ref([]);
+var colorLayoutDescriptor = ref({ y: [], cb: [], cr: [] });
 const dominantColors = ref([]);
 const selectedImage = ref(null);
 const numberOfClusters = ref(3);
+const dctCoeffs = ref(4);
 
 const selectImage = (index) => {
   selectedImage.value = index;
@@ -212,11 +233,6 @@ const fetchImages = async () => {
     console.log(img);
     images.value.push({ src: img, alt: "Thumbnail 5" });
   }
-};
-
-const updateClusters = () => {
-  console.log("Number of clusters:", numberOfClusters.value);
-  getDominantColors();
 };
 
 const getDominantColors = () => {
@@ -260,6 +276,21 @@ const getColorLayoutDescriptor = () => {
     })
     .catch((error) => {
       console.error("Error:", error);
+    });
+
+  fetch("http://0.0.0.0:8000/color_layout_descriptor", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image_url: src, dct: dctCoeffs.value }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log(data);
+      colorLayoutDescriptor.value["y"] = data.y;
+      colorLayoutDescriptor.value["cb"] = data.cb;
+      colorLayoutDescriptor.value["cr"] = data.cr;
+      console.log("Color Layout Descriptor:", colorLayoutDescriptor.value);
+      //drawColorLayoutDescriptor("#color-layout-descriptor", colorLayoutDescriptor.value);
     });
 };
 
@@ -356,5 +387,34 @@ onMounted(() => {
 
 svg {
   display: block;
+}
+
+.slider {
+  -webkit-appearance: none; /* Remove default styling */
+  height: 10px;
+  width: 250px;
+  background: rgb(212, 212, 212); /* Grey track */
+  border-radius: 9px;
+  outline: none;
+}
+
+/* Thumb (for Chrome, Safari, Edge, Opera) */
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: black; /* Black thumb */
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Thumb (for Firefox) */
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: black;
+  border-radius: 50%;
+  cursor: pointer;
 }
 </style>
