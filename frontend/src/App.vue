@@ -5,14 +5,12 @@
     <h3 class="medium">Explaining by visuals by Diana Varšíková</h3>
     <main>
       <p>
-        MPEG-7 is a multimedia content description standard designed to provide
-        a structured and rich representation of multimedia data, such as images,
-        audio, and video. It serves as a framework for efficiently organizing
-        and retrieving multimedia content, making it easier to search and
-        analyze large datasets. In the context of images, MPEG-7 defines a set
-        of
-        <span style="font-weight: bold">image descriptors</span>, which are
-        features that describe and identify visual characteristics of images.
+        MPEG-7 is a multimedia content description standard designed to provide a structured and rich
+        representation of multimedia data, such as images, audio, and video. It serves as a framework for
+        efficiently organizing and retrieving multimedia content, making it easier to search and analyze large
+        datasets. In the context of images, MPEG-7 defines a set of
+        <span style="font-weight: bold">image descriptors</span>, which are features that describe and
+        identify visual characteristics of images.
       </p>
       <p class="medium">It all begins with an image...Pick one.</p>
       <div class="thumbnails">
@@ -35,48 +33,40 @@
         <div class="big">Dominant Color Descriptor</div>
         <div>
           The
-          <span style="font-weight: bold">Dominant Color Descriptor (DCD) </span
-          >is one of the simplest yet key image descriptors defined in MPEG-7.
-          It focuses on identifying the most significant colors in the image and
-          analyzing their distribution.
+          <span style="font-weight: bold">Dominant Color Descriptor (DCD) </span>is one of the simplest yet
+          key image descriptors defined in MPEG-7. It focuses on identifying the most significant colors in
+          the image and analyzing their distribution.
         </div>
         <div>
           Each pixel in the image is represented by its
-          <span style="font-weight: bold">RGB</span> values (Red, Green, Blue),
-          with each channel ranging from 0 to 255. Together, these three values
-          define a single point in the 3D RGB color space.
+          <span style="font-weight: bold">RGB</span> values (Red, Green, Blue), with each channel ranging from
+          0 to 255. Together, these three values define a single point in the 3D RGB color space.
         </div>
         <div id="pixel"></div>
         <div>
-          The entire image consists of a large number of pixels. For instance,
-          the images used on this webpage have dimensions of 384x256, resulting
-          in 98,304 pixels. If you imagine each pixel's color as a point in 3D
-          space, the entire image forms a cloud of points within the RGB color
-          space.
+          The entire image consists of a large number of pixels. For instance, the images used on this webpage
+          have dimensions of 384x256, resulting in 98,304 pixels. If you imagine each pixel's color as a point
+          in 3D space, the entire image forms a cloud of points within the RGB color space.
         </div>
         <div id="rgb3d"></div>
         <div>
-          To identify the dominant colors, we need to group similar colors
-          together. This is done using a technique called clustering. Clustering
-          algorithms group the pixels into a fixed number of so-called clusters,
-          based on their color similarity.
+          To identify the dominant colors, we need to group similar colors together. This is done using a
+          technique called clustering. Clustering algorithms group the pixels into a fixed number of so-called
+          clusters, based on their color similarity.
         </div>
         <div id="rgb3d-circles"></div>
         <div>
-          From each cluster, one 'average' pixel is created, this pixel is
-          called the
-          <span style="font-weight: bold">centroid</span> of the cluster and it
-          captures the "average" color of all the pixels that belong to that
-          cluster.
+          From each cluster, one 'average' pixel is created, this pixel is called the
+          <span style="font-weight: bold">centroid</span> of the cluster and it captures the "average" color
+          of all the pixels that belong to that cluster.
         </div>
         <div id="avg-pixel"></div>
 
         <div>
-          This is done for all the clusters, and the average colors then form
-          the Visual Color Descriptor. The importance of the cluster is
-          determined by the number of pixels it contains. We can usually choose
-          the number of clusters we want to group the points into. The more
-          clusters, the more detailed the descriptor.
+          This is done for all the clusters, and the average colors then form the Visual Color Descriptor. The
+          importance of the cluster is determined by the number of pixels it contains. We can usually choose
+          the number of clusters we want to group the points into. The more clusters, the more detailed the
+          descriptor.
         </div>
         <p class="medium">Try it with your image.</p>
         <img
@@ -99,9 +89,8 @@
         <div>Number of Clusters: {{ numberOfClusters }}</div>
         <div id="dominant-colors"></div>
         <div>
-          We can then reconstruct the image using only the dominant colors by
-          assigning each pixel to the closest centroid. In general, 8 clusters
-          is considered a good enough approximation of the image.
+          We can then reconstruct the image using only the dominant colors by assigning each pixel to the
+          closest centroid. In general, 8 clusters is considered a good enough approximation of the image.
         </div>
       </div>
       <img id="reconstructedDominant" />
@@ -116,86 +105,81 @@
         <div>
           This time, the pixels are represented not in the RGB space, but in
           <span style="font-weight: bold">HSV</span>
-          (Hue, Saturation, Value) space. Hue represents the type of color (e.g.
-          red, green, blue), Saturation represents the intensity of the color,
-          and Value represents its brightness.
+          (Hue, Saturation, Value) space. Hue represents the type of color (e.g. red, green, blue), Saturation
+          represents the intensity of the color, and Value represents its brightness.
         </div>
-        <img src="./assets/hsv.svg" />
+        <img
+          src="./assets/hsv.svg"
+          style="width: 300px; height: auto; margin-bottom: 20px; margin-top: 20px"
+        />
         <div>
-          The HSV space is divided into a fixed number of bins, and each pixel
-          is assigned to one of them, based on its proximity in HSV space. //The
-          image colors are simplified into a limited set of representative
-          colors in HSV space. Divide the HSV color space into predefined bins
-          (e.g., 256, 128, or 64 bins). Count the number of pixels in each bin
-          to build a color histogram.
+          The HSV space is divided into a fixed number of bins, and each pixel is assigned to one of them,
+          based on its proximity in HSV space. //The image colors are simplified into a limited set of
+          representative colors in HSV space. Divide the HSV color space into predefined bins (e.g., 256, 128,
+          or 64 bins). Count the number of pixels in each bin to build a color histogram.
         </div>
         <!-- <div>obrazek zjednoduseny na kvantizovane pixely</div> -->
-        <div>
-          The number of pixels that belong to each bin then form a histogram.
-        </div>
+        <div>The number of pixels that belong to each bin then form a histogram.</div>
         <div id="scd-histogram"></div>
         <div>
-          Use the Haar Wavelet Transform to decompose the histogram. The
-          transformation captures both low-frequency (overall color
-          distribution) and high-frequency (fine details) information.
+          Use the Haar Wavelet Transform to decompose the histogram. The transformation captures both
+          low-frequency (overall color distribution) and high-frequency (fine details) information.
         </div>
         <div>
-          The wavelet coefficients are quantized to reduce storage size. The
-          descriptor can be encoded at different levels of detail (scalable
-          representation).
+          The wavelet coefficients are quantized to reduce storage size. The descriptor can be encoded at
+          different levels of detail (scalable representation).
         </div>
       </div>
       <div v-if="selectedImage != null" class="cld">
         <div class="big">Color Layout Descriptor</div>
         <div style="margin-bottom: 20px">
-          This time we want to describe an image not just by its colors but also
-          by where those colors appear. For example, if you have an image of a
-          sunset, you wouldn't just say "orange and blue"—you'd also want to
-          capture that orange is at the bottom and blue is at the top. The
-          <span style="font-weight: bold">Color Layout Descriptor</span> (CLD)
-          does exactly that.
+          This time we want to describe an image not just by its colors but also by where those colors appear.
+          For example, if you have an image of a sunset, you wouldn't just say "orange and blue"—you'd also
+          want to capture that orange is at the bottom and blue is at the top. The
+          <span style="font-weight: bold">Color Layout Descriptor</span> (CLD) does exactly that.
         </div>
         <div>
-          Instead of analyzing every single pixel (which would be too much
-          data), we split the image into a grid of (in this case) 8x8 blocks.
-          Each block represents a small region of the image.
+          Instead of analyzing every single pixel (which would be too much data), we split the image into a
+          grid of (in this case) 8x8 blocks. Each block represents a small region of the image.
         </div>
         <div id="image-grid"></div>
         <div>
-          For each block, we calculate the average color—essentially compressing
-          all the pixels in the block into a single color value. So, if a block
-          contains mostly shades of blue, we replace it with a single average
-          blue color. Think of this like reducing an HD image into a very
-          low-resolution version where each block is a single color.The
-          selection results in a tiny image icon of size 12 x 8 pixels.
+          For each block, we calculate the average color—essentially compressing all the pixels in the block
+          into a single color value. So, if a block contains mostly shades of blue, we replace it with a
+          single average blue color. Think of this like reducing an HD image into a very low-resolution
+          version where each block is a single color.The selection results in a tiny image icon of size 12 x 8
+          pixels.
         </div>
         <img id="gridAvg" />
         <div>
           Afterwards, this simplified image is transformed into
-          <span style="font-weight: bold">YCbCr</span> space, which separates
-          brightness (luma) from color (chroma), was created due to backwards
-          compatibility, so that old tvs could ignore the color part Y is
-          essentially greyscale copy of the original one cb - blue chrominance
-          cr - red chrominance
+          <span style="font-weight: bold">YCbCr</span> space, which separates brightness (luma) from color
+          (chroma). This color space was developed in the era of first color TVs for backward compatibility
+          with black and white TVs, allowing older TVs to ignore the color information. The Y channel
+          represents the grayscale version of the image, while Cb and Cr store the blue and red chrominance
+          components, respectively. You can see the three channels below.
         </div>
-        <div class="y_cb_cr_container">
+        <div class="y_cb_cr_container" style="margin-bottom: 20px; margin-top: 20px">
           <img class="channels_img" id="y_cb_cr_channels_y" />
           <img class="channels_img" id="y_cb_cr_channels_cb" />
           <img class="channels_img" id="y_cb_cr_channels_cr" />
         </div>
         <div>
-          As last step, we apply the
+          After getting the representation in YCbCr space, we apply the
           <span style="font-weight: bold">Discrete Cosine Transform (DCT)</span>
-          to the YCbCr image. The DCT is a mathematical technique that
-          transforms the image into a three sets of 64 TODO DCT coefficients
-          (stejny rozmer jako ten orbazek). A zigzag scanning is performed with
-          these three sets of 64 DCT coefficients, following the schema
-          presented in the figure. The purpose of the zigzag scan is to group
-          the low frequency coefficients of the 8x8 TODO matrix. Zig zag
-          scanning ilustrace TODO. Then, the more coefficients we keep, the more
-          detailed the descriptor will be.
+          to the YCbCr image. The DCT is a mathematical technique that transforms the image into a three sets
+          of 64 TODO DCT coefficients (stejny rozmer jako ten orbazek). A zigzag scanning is performed with
+          these three sets of 64 DCT coefficients, following the schema presented in the figure. The purpose
+          of the zigzag scan is to group the low frequency coefficients of the 8x8 TODO matrix.
         </div>
         <div id="zigzag"></div>
+        <div>The more DCT coefficients we keep, the more detailed the descriptor will be.</div>
+        <p class="medium">Let's compute the CLD for your chosen image.</p>
+        <img
+          v-if="selectedImage !== null"
+          :src="images[selectedImage].src"
+          :alt="images[selectedImage].alt"
+        />
         <div>
           <input
             class="slider"
@@ -208,13 +192,13 @@
           />
         </div>
         <div>Number of DCT Coefficients: {{ dctCoeffs }}</div>
+        <div style="font-weight: bold">Y : {{ colorLayoutDescriptor["y"] }}</div>
+        <div style="font-weight: bold">Cb : {{ colorLayoutDescriptor["cb"] }}</div>
+        <div style="font-weight: bold">Cr : {{ colorLayoutDescriptor["cr"] }}</div>
         <div>
-          Y {{ colorLayoutDescriptor["y"] }} Cb1
-          {{ colorLayoutDescriptor["cb"] }} Cr {{ colorLayoutDescriptor["cr"] }}
-        </div>
-        <div>
-          Very compact with many information Is often used for comparing
-          multiple images between themselves.
+          The biggest advantage of DCT is its ability to compress the image data effectively. It is often used
+          for comparing multiple images between themselves, as it encodes not only colors, but also their
+          spatial distribution.
         </div>
       </div>
       <div>Sources</div>
@@ -223,30 +207,30 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onMounted } from "vue";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { drawPixel } from "@/scripts/drawPixel";
-import { draw3Drgb } from "@/scripts/draw3Drgb";
-import { drawPixelCircle } from "./scripts/drawPixelCircle";
-import { drawDominantColors } from "./scripts/drawDominantColors";
-import { drawImageGrid } from "./scripts/drawImageGrid";
-import { drawScdHistogram } from "./scripts/drawScdHistogram";
-import { drawZigzag } from "./scripts/drawZigZag";
+import { ref, watch, nextTick, onMounted } from "vue"
+import { gsap } from "gsap"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+import { drawPixel } from "@/scripts/drawPixel"
+import { draw3Drgb } from "@/scripts/draw3Drgb"
+import { drawPixelCircle } from "./scripts/drawPixelCircle"
+import { drawDominantColors } from "./scripts/drawDominantColors"
+import { drawImageGrid } from "./scripts/drawImageGrid"
+import { drawScdHistogram } from "./scripts/drawScdHistogram"
+import { drawZigzag } from "./scripts/drawZigZag"
 
 //import cv from 'opencv.js'
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger)
 
-var images = ref([]);
-var colorLayoutDescriptor = ref({ y: [], cb: [], cr: [] });
-const dominantColors = ref([]);
-const selectedImage = ref(null);
-const numberOfClusters = ref(3);
-const dctCoeffs = ref(4);
+var images = ref([])
+var colorLayoutDescriptor = ref({ y: [], cb: [], cr: [] })
+const dominantColors = ref([])
+const selectedImage = ref(null)
+const numberOfClusters = ref(3)
+const dctCoeffs = ref(4)
 
 const selectImage = (index) => {
-  selectedImage.value = index;
-};
+  selectedImage.value = index
+}
 
 const fetchImages = async () => {
   const imagesArray = [
@@ -258,27 +242,27 @@ const fetchImages = async () => {
     "gray-concrete-road-between-buildings-Sws6G1nFJ4E",
     "aerial-view-of-golden-gate-bridge-RRNbMiPmTZY",
     "multicolored-wall-in-shallow-focus-photography-jbtfM0XBeRc",
-  ];
-  console.log("Fetching images");
+  ]
+  console.log("Fetching images")
   // Fetch images from Unsplash API
   for (const imageId of imagesArray) {
     //console.log(imageId)
     const response = await fetch(
       `https://api.unsplash.com/photos/${imageId}?client_id=BIQAVulO8kpvryy7H_bxLG9y3sMiJz1i3zNpN1OG8P8`
-    );
-    const data = await response.json();
+    )
+    const data = await response.json()
     //console.log(data)
-    const img = data.urls.raw + "&w=384&h=256&fit=crop";
-    console.log(imageId);
-    images.value.push({ src: img, alt: "Thumbnail 5" });
+    const img = data.urls.raw + "&w=384&h=256&fit=crop"
+    console.log(imageId)
+    images.value.push({ src: img, alt: "Thumbnail 5" })
   }
-};
+}
 
 const getDominantColors = () => {
   //get the src of selected image
-  console.log("Getting dominant colors");
-  const src = images.value[selectedImage.value].src;
-  console.log(src);
+  console.log("Getting dominant colors")
+  const src = images.value[selectedImage.value].src
+  console.log(src)
   fetch("http://0.0.0.0:8000/dominant_color", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -286,21 +270,21 @@ const getDominantColors = () => {
   })
     .then((response) => response.json())
     .then((data) => {
-      console.log(data);
-      const img = document.getElementById("reconstructedDominant");
-      img.src = `data:image/jpeg;base64,${data.processed_image}`;
-      console.log("Dominant Colors:", data.dominant_colors);
-      dominantColors.value = data.dominant_colors;
-      drawDominantColors("#dominant-colors", dominantColors.value);
+      console.log(data)
+      const img = document.getElementById("reconstructedDominant")
+      img.src = `data:image/jpeg;base64,${data.processed_image}`
+      console.log("Dominant Colors:", data.dominant_colors)
+      dominantColors.value = data.dominant_colors
+      drawDominantColors("#dominant-colors", dominantColors.value)
     })
     .catch((error) => {
-      console.error("Error:", error);
-    });
-};
+      console.error("Error:", error)
+    })
+}
 
 const getYCbCrChannels = () => {
-  console.log("getting YCbCr channels");
-  const src = images.value[selectedImage.value].src;
+  console.log("getting YCbCr channels")
+  const src = images.value[selectedImage.value].src
   // use img from gridAvg element as src:
   //const src = document.getElementById("gridAvg").src;
   fetch("http://0.0.0.0:8000/y_cb_cr_channels", {
@@ -310,22 +294,22 @@ const getYCbCrChannels = () => {
   })
     .then((response) => response.json())
     .then((data) => {
-      console.log(data);
-      const img_y = document.getElementById("y_cb_cr_channels_y");
-      img_y.src = `data:image/jpeg;base64,${data["y"]}`;
-      const img_cb = document.getElementById("y_cb_cr_channels_cb");
-      img_cb.src = `data:image/jpeg;base64,${data["cb"]}`;
-      const img_cr = document.getElementById("y_cb_cr_channels_cr");
-      img_cr.src = `data:image/jpeg;base64,${data["cr"]}`;
+      console.log(data)
+      const img_y = document.getElementById("y_cb_cr_channels_y")
+      img_y.src = `data:image/jpeg;base64,${data["y"]}`
+      const img_cb = document.getElementById("y_cb_cr_channels_cb")
+      img_cb.src = `data:image/jpeg;base64,${data["cb"]}`
+      const img_cr = document.getElementById("y_cb_cr_channels_cr")
+      img_cr.src = `data:image/jpeg;base64,${data["cr"]}`
     })
     .catch((error) => {
-      console.error("Error:", error);
-    });
-};
+      console.error("Error:", error)
+    })
+}
 
 const getColorLayoutDescriptor = () => {
-  console.log("getting color layout descriptor");
-  const src = images.value[selectedImage.value].src;
+  console.log("getting color layout descriptor")
+  const src = images.value[selectedImage.value].src
   fetch("http://0.0.0.0:8000/color_layout_grid", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -333,13 +317,13 @@ const getColorLayoutDescriptor = () => {
   })
     .then((response) => response.json())
     .then((data) => {
-      console.log(data);
-      const img = document.getElementById("gridAvg");
-      img.src = `data:image/jpeg;base64,${data.processed_image}`;
+      console.log(data)
+      const img = document.getElementById("gridAvg")
+      img.src = `data:image/jpeg;base64,${data.processed_image}`
     })
     .catch((error) => {
-      console.error("Error:", error);
-    });
+      console.error("Error:", error)
+    })
 
   fetch("http://0.0.0.0:8000/color_layout_descriptor", {
     method: "POST",
@@ -348,18 +332,18 @@ const getColorLayoutDescriptor = () => {
   })
     .then((response) => response.json())
     .then((data) => {
-      console.log(data);
-      colorLayoutDescriptor.value["y"] = data.y;
-      colorLayoutDescriptor.value["cb"] = data.cb;
-      colorLayoutDescriptor.value["cr"] = data.cr;
-      console.log("Color Layout Descriptor:", colorLayoutDescriptor.value);
+      console.log(data)
+      colorLayoutDescriptor.value["y"] = data.y
+      colorLayoutDescriptor.value["cb"] = data.cb
+      colorLayoutDescriptor.value["cr"] = data.cr
+      console.log("Color Layout Descriptor:", colorLayoutDescriptor.value)
       //drawColorLayoutDescriptor("#color-layout-descriptor", colorLayoutDescriptor.value);
-    });
-};
+    })
+}
 
 const getScdHistogram = () => {
-  console.log("getting scd histogram");
-  const src = images.value[selectedImage.value].src;
+  console.log("getting scd histogram")
+  const src = images.value[selectedImage.value].src
   fetch("http://0.0.0.0:8000/scd_histogram/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -367,54 +351,46 @@ const getScdHistogram = () => {
   })
     .then((response) => response.json())
     .then((data) => {
-      console.log(data);
-      drawScdHistogram(
-        "#scd-histogram",
-        data["histogram"],
-        data["hue_rgb_mapping"]
-      );
-    });
-};
+      console.log(data)
+      drawScdHistogram("#scd-histogram", data["histogram"], data["hue_rgb_mapping"])
+    })
+}
 
 // Watch for changes in `selectedImage`
 watch(selectedImage, async (newValue) => {
   if (newValue !== null) {
     // DOM update before animation
-    await nextTick();
+    await nextTick()
     gsap.fromTo(
       ".dig-in",
       { opacity: 0, y: 50 }, // Start state
       { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" } // End state
-    );
+    )
 
-    drawPixel("#pixel");
-    drawZigzag("#zigzag");
-    draw3Drgb("#rgb3d", false);
-    draw3Drgb("#rgb3d-circles", true);
-    drawPixelCircle("#avg-pixel");
+    drawPixel("#pixel")
+    drawZigzag("#zigzag")
+    draw3Drgb("#rgb3d", false)
+    draw3Drgb("#rgb3d-circles", true)
+    drawPixelCircle("#avg-pixel")
     //processImage()
     ScrollTrigger.create({
       trigger: ".test2",
       //start: 'top 20%',
       //end: 'top 10%',
       //scrub: false,
-      animation: gsap.fromTo(
-        ".test2",
-        { opacity: 0, y: 50 },
-        { opacity: 1, y: 0, duration: 5 }
-      ),
-    });
-    getDominantColors();
-    getScdHistogram();
-    drawImageGrid("#image-grid", images.value[selectedImage.value].src);
-    await getColorLayoutDescriptor();
-    getYCbCrChannels();
+      animation: gsap.fromTo(".test2", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 5 }),
+    })
+    getDominantColors()
+    getScdHistogram()
+    drawImageGrid("#image-grid", images.value[selectedImage.value].src)
+    await getColorLayoutDescriptor()
+    getYCbCrChannels()
   }
-});
+})
 
 onMounted(() => {
-  fetchImages();
-});
+  fetchImages()
+})
 </script>
 
 <style scoped>

@@ -1,23 +1,19 @@
-import * as d3 from "d3";
+import * as d3 from "d3"
 
 export function drawZigzag(containerId) {
-  console.log("drawZigzag");
-  d3.select(containerId).selectAll("*").remove();
+  console.log("drawZigzag")
+  d3.select(containerId).selectAll("*").remove()
 
-  const width = 200;
-  const height = 200;
+  const width = 200
+  const height = 200
 
-  const gridSize = 50;
-  const cols = 4;
-  const rows = 4;
+  const gridSize = 50
+  const cols = 4
+  const rows = 4
 
-  const svg = d3
-    .select(containerId)
-    .append("svg")
-    .attr("width", width)
-    .attr("height", height);
+  const svg = d3.select(containerId).append("svg").attr("width", width).attr("height", height)
 
-  // Draw the grid
+  // draw grid
   for (let i = 0; i <= cols; i++) {
     svg
       .append("line")
@@ -26,7 +22,7 @@ export function drawZigzag(containerId) {
       .attr("x2", i * gridSize)
       .attr("y2", gridSize * rows)
       .attr("stroke", "black")
-      .attr("stroke-width", 2);
+      .attr("stroke-width", 2)
   }
 
   for (let j = 0; j <= rows; j++) {
@@ -37,10 +33,9 @@ export function drawZigzag(containerId) {
       .attr("x2", gridSize * cols)
       .attr("y2", j * gridSize)
       .attr("stroke", "black")
-      .attr("stroke-width", 2);
+      .attr("stroke-width", 2)
   }
 
-  // Define connections (x, y) based on a 4x4 grid
   const connections = [
     [
       [0, 0],
@@ -107,11 +102,11 @@ export function drawZigzag(containerId) {
       [2, 3],
       [3, 3],
     ],
-  ];
+  ]
 
-  // Draw the connections
+  // connections
   connections.forEach((pair) => {
-    const [[x1, y1], [x2, y2]] = pair;
+    const [[x1, y1], [x2, y2]] = pair
     svg
       .append("line")
       .attr("x1", x1 * gridSize + gridSize / 2)
@@ -119,6 +114,6 @@ export function drawZigzag(containerId) {
       .attr("x2", x2 * gridSize + gridSize / 2)
       .attr("y2", y2 * gridSize + gridSize / 2)
       .attr("stroke", "black")
-      .attr("stroke-width", 2);
-  });
+      .attr("stroke-width", 2)
+  })
 }

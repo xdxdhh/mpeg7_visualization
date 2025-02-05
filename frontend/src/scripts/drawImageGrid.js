@@ -1,30 +1,22 @@
-import * as d3 from "d3";
+import * as d3 from "d3"
 
 export function drawImageGrid(containerId, selectedImage) {
-  console.log("drawImageGrid");
+  console.log("drawImageGrid")
   // Clear any existing content
-  d3.select(containerId).selectAll("*").remove();
+  d3.select(containerId).selectAll("*").remove()
 
   // SVG Dimensions
-  const width = 384;
-  const height = 256;
+  const width = 384
+  const height = 256
 
-  const svg = d3
-    .select(containerId)
-    .append("svg")
-    .attr("width", width)
-    .attr("height", height);
+  const svg = d3.select(containerId).append("svg").attr("width", width).attr("height", height)
 
-  const rows = 8;
-  const cols = 12;
-  const cellWidth = width / cols;
-  const cellHeight = height / rows;
+  const rows = 8
+  const cols = 12
+  const cellWidth = width / cols
+  const cellHeight = height / rows
 
-  svg
-    .append("image")
-    .attr("xlink:href", selectedImage)
-    .attr("width", width)
-    .attr("height", height);
+  svg.append("image").attr("xlink:href", selectedImage).attr("width", width).attr("height", height)
 
   // Draw vertical grid lines
   for (let i = 1; i < cols; i++) {
@@ -35,7 +27,7 @@ export function drawImageGrid(containerId, selectedImage) {
       .attr("x2", i * cellWidth)
       .attr("y2", height)
       .attr("stroke", "black")
-      .attr("stroke-width", 2);
+      .attr("stroke-width", 2)
   }
 
   // Draw horizontal grid lines
@@ -47,6 +39,6 @@ export function drawImageGrid(containerId, selectedImage) {
       .attr("x2", width)
       .attr("y2", i * cellHeight)
       .attr("stroke", "black")
-      .attr("stroke-width", 2);
+      .attr("stroke-width", 2)
   }
 }
