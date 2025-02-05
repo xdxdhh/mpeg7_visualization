@@ -1,20 +1,17 @@
 from fastapi import FastAPI, HTTPException
 import requests
 import numpy as np
-import io
 import cv2
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sklearn.cluster import KMeans
 import base64
-
 
 from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this for your production environment
+    allow_origins=["*"],  # adjust for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -220,8 +217,74 @@ async def color_layout_descriptor(request: ColorLayoutImageRequest):
     dct_Cr = cv2.dct(avg_Cr)
 
     # Coefficients in zigzag order -> keep the first `num_coefficients`
-    zigzag_Y = zigzag_traversal(dct_Y)[:num_coefficients]
-    zigzag_Cb = zigzag_traversal(dct_Cb)[:num_coefficients]
-    zigzag_Cr = zigzag_traversal(dct_Cr)[:num_coefficients]
+    zigzag_Y = np.round(zigzag_traversal(dct_Y)[:num_coefficients], 2)
+    zigzag_Cb = np.round(zigzag_traversal(dct_Cb)[:num_coefficients], 2)
+    zigzag_Cr = np.round(zigzag_traversal(dct_Cr)[:num_coefficients], 2)
     
     return {"y": zigzag_Y.tolist(), "cb": zigzag_Cb.tolist(), "cr": zigzag_Cr.tolist()}
+
+@app.post("/y_cb_cr_channels/")
+async def y_cb_cr_channels(request: ImageRequest):
+    response = requests.get(request.image_url)
+    response.raise_for_status()
+
+    image_data = response.content
+
+    np_arr = np.frombuffer(image_data, np.uint8)
+    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+    ycbcr = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
+    Y, Cb, Cr = cv2.split(ycbcr)
+
+    # normalize Cb and Cr for visualization (they are centered around 128)
+    Cb_display = cv2.normalize(Cb, None, 0, 255, cv2.NORM_MINMAX)
+    Cr_display = cv2.normalize(Cr, None, 0, 255, cv2.NORM_MINMAX)
+
+    # Create grayscale images where only one channel is visible
+    Y_img = cv2.merge([Y, Y, Y])  # Y as grayscale
+    Cb_img = cv2.merge([Cb_display, np.zeros_like(Cb), np.zeros_like(Cb)])  # Cb in blue
+    Cr_img = cv2.merge([np.zeros_like(Cr), np.zeros_like(Cr), Cr_display])  # Cr in red
+
+    _, buffer_y = cv2.imencode('.jpg', Y_img)
+    image_base64_y = base64.b64encode(buffer_y).decode('utf-8')
+    _, buffer_cb = cv2.imencode('.jpg', Cb_img)
+    image_base64_cb = base64.b64encode(buffer_cb).decode('utf-8')
+    _, buffer_cr = cv2.imencode('.jpg', Cr_img)
+    image_base64_cr = base64.b64encode(buffer_cr).decode('utf-8')
+    response_data = {
+            "y": image_base64_y,
+            "cb": image_base64_cb,
+            "cr": image_base64_cr
+        }
+
+    return response_data
+
+@app.post("/scd_histogram/")
+async def get_scd_histogram(request: ImageRequest):
+
+    response = requests.get(request.image_url)
+    response.raise_for_status()
+
+    image_data = response.content
+
+    np_arr = np.frombuffer(image_data, np.uint8)
+    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+    # HSV
+    hsv_image = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+    # Extract hue channel
+    hue_channel = hsv_image[:, :, 0]
+
+    # 256 bin hue histogram
+    histogram = cv2.calcHist([hue_channel], [0], None, [256], [0, 256])
+
+    # normalize for visualization
+    histogram = cv2.normalize(histogram, histogram, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+
+    histogram_list = histogram.flatten().tolist()
+    response_data = {
+        "histogram": histogram_list
+    }
+
+    return response_data

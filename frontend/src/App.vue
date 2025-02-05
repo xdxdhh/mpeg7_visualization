@@ -125,11 +125,23 @@
           The HSV space is divided into a fixed number of bins, and each pixel
           is assigned to one of them, based on its proximity in HSV space. //The
           image colors are simplified into a limited set of representative
-          colors in HSV space.
+          colors in HSV space. Divide the HSV color space into predefined bins
+          (e.g., 256, 128, or 64 bins). Count the number of pixels in each bin
+          to build a color histogram.
         </div>
         <!-- <div>obrazek zjednoduseny na kvantizovane pixely</div> -->
         <div>
           The number of pixels that belong to each bin then form a histogram.
+        </div>
+        <div>
+          Use the Haar Wavelet Transform to decompose the histogram. The
+          transformation captures both low-frequency (overall color
+          distribution) and high-frequency (fine details) information.
+        </div>
+        <div>
+          The wavelet coefficients are quantized to reduce storage size. The
+          descriptor can be encoded at different levels of detail (scalable
+          representation).
         </div>
       </div>
       <div v-if="selectedImage != null" class="cld">
@@ -154,14 +166,33 @@
           For each block, we calculate the average color—essentially compressing
           all the pixels in the block into a single color value. So, if a block
           contains mostly shades of blue, we replace it with a single average
-          blue color.
+          blue color. The selection results in a tiny image icon of size TODO.
         </div>
         <img id="gridAvg" />
         <div>
-          <span style="font-weight: bold">YCbCr</span>, which separates
+          Afterwards, this simplified image is transformed into
+          <span style="font-weight: bold">YCbCr</span> space, which separates
           brightness (luma) from color (chroma), was created due to backwards
           compatibility, so that old tvs could ignore the color part Y is
-          essentially greyscale copy of the original one
+          essentially greyscale copy of the original one cb - blue chrominance
+          cr - red chrominance
+        </div>
+        <div class="y_cb_cr_container">
+          <img class="channels_img" id="y_cb_cr_channels_y" />
+          <img class="channels_img" id="y_cb_cr_channels_cb" />
+          <img class="channels_img" id="y_cb_cr_channels_cr" />
+        </div>
+        <div>
+          As last step, we apply the
+          <span style="font-weight: bold">Discrete Cosine Transform (DCT)</span>
+          to the YCbCr image. The DCT is a mathematical technique that
+          transforms the image into a three sets of 64 TODO DCT coefficients
+          (stejny rozmer jako ten orbazek). A zigzag scanning is performed with
+          these three sets of 64 DCT coefficients, following the schema
+          presented in the figure. The purpose of the zigzag scan is to group
+          the low frequency coefficients of the 8x8 TODO matrix. Zig zag
+          scanning ilustrace TODO. Then, the more coefficients we keep, the more
+          detailed the descriptor will be.
         </div>
         <div>
           <input
@@ -178,6 +209,10 @@
         <div>
           Y {{ colorLayoutDescriptor["y"] }} Cb1
           {{ colorLayoutDescriptor["cb"] }} Cr {{ colorLayoutDescriptor["cr"] }}
+        </div>
+        <div>
+          Very compact with many information Is often used for comparing
+          multiple images between themselves.
         </div>
       </div>
     </main>
@@ -230,15 +265,13 @@ const fetchImages = async () => {
     //console.log(data)
     const img = data.urls.raw + "&w=384&h=256&fit=crop";
     console.log(imageId);
-    console.log(img);
     images.value.push({ src: img, alt: "Thumbnail 5" });
   }
 };
 
 const getDominantColors = () => {
   //get the src of selected image
-  console.log("getting dominant colors");
-  console.log("selected img: ", images.value[selectedImage.value]);
+  console.log("Getting dominant colors");
   const src = images.value[selectedImage.value].src;
   console.log(src);
   fetch("http://0.0.0.0:8000/dominant_color", {
@@ -254,6 +287,31 @@ const getDominantColors = () => {
       console.log("Dominant Colors:", data.dominant_colors);
       dominantColors.value = data.dominant_colors;
       drawDominantColors("#dominant-colors", dominantColors.value);
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+    });
+};
+
+const getYCbCrChannels = () => {
+  console.log("getting YCbCr channels");
+  const src = images.value[selectedImage.value].src;
+  // use img from gridAvg element as src:
+  //const src = document.getElementById("gridAvg").src;
+  fetch("http://0.0.0.0:8000/y_cb_cr_channels", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image_url: src }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log(data);
+      const img_y = document.getElementById("y_cb_cr_channels_y");
+      img_y.src = `data:image/jpeg;base64,${data["y"]}`;
+      const img_cb = document.getElementById("y_cb_cr_channels_cb");
+      img_cb.src = `data:image/jpeg;base64,${data["cb"]}`;
+      const img_cr = document.getElementById("y_cb_cr_channels_cr");
+      img_cr.src = `data:image/jpeg;base64,${data["cr"]}`;
     })
     .catch((error) => {
       console.error("Error:", error);
@@ -323,7 +381,8 @@ watch(selectedImage, async (newValue) => {
     });
     getDominantColors();
     drawImageGrid("#image-grid", images.value[selectedImage.value].src);
-    getColorLayoutDescriptor();
+    await getColorLayoutDescriptor();
+    getYCbCrChannels();
   }
 });
 
@@ -416,5 +475,17 @@ svg {
   background: black;
   border-radius: 50%;
   cursor: pointer;
+}
+
+.y_cb_cr_container {
+  display: flex; /* Places images side by side */
+  gap: 10px; /* Adds space between images */
+  justify-content: center; /* Center images horizontally */
+}
+
+.channels_img {
+  width: 200px;
+  height: auto; /* Keep aspect ratio */
+  border-radius: 1px; /* Optional: rounded corners */
 }
 </style>
