@@ -282,9 +282,77 @@ async def get_scd_histogram(request: ImageRequest):
     # normalize for visualization
     histogram = cv2.normalize(histogram, histogram, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
 
+    # Get the RGB value for each hue bin
+    hue_to_rgb = []
+    for hue in range(256):
+        # Convert the hue to RGB
+        rgb = cv2.cvtColor(np.uint8([[[hue, 255, 255]]]), cv2.COLOR_HSV2BGR)
+        hue_to_rgb.append(rgb[0][0].tolist())
+
     histogram_list = histogram.flatten().tolist()
     response_data = {
-        "histogram": histogram_list
+        "histogram": histogram_list,
+        "hue_rgb_mapping": hue_to_rgb
     }
 
     return response_data
+
+def quantize_hsv(image):
+    print("Quantize HSV")
+    # Convert image to HSV color space
+    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    
+    # Define number of bins for each channel
+    h_bins = 16
+    s_bins = 4
+    v_bins = 4
+    
+    # Quantize Hue, Saturation, and Value channels
+    h_range = 180  # Hue range (0 to 179 in OpenCV)
+    s_range = 256  # Saturation range (0 to 255 in OpenCV)
+    v_range = 256  # Value range (0 to 255 in OpenCV)
+
+    # Quantize each channel to the defined bins
+    hsv_image[..., 0] = (hsv_image[..., 0] * h_bins / h_range).astype(np.uint8)  # Quantize Hue
+    hsv_image[..., 1] = (hsv_image[..., 1] * s_bins / s_range).astype(np.uint8)  # Quantize Saturation
+    hsv_image[..., 2] = (hsv_image[..., 2] * v_bins / v_range).astype(np.uint8)  # Quantize Value
+
+
+    return hsv_image
+
+
+def compute_histogram(quantized_hsv_image):
+    print("Compute Histogram")
+    # Flatten the image into a 1D array of pixel values (Hue, Saturation, Value)
+    height, width, _ = quantized_hsv_image.shape
+    pixels = quantized_hsv_image.reshape(-1, 3)
+
+    # Create an empty histogram (16x4x4)
+    hist = np.zeros((16, 4, 4), dtype=int)
+    
+    # Populate the histogram by iterating over each pixel
+    for pixel in pixels:
+        h, s, v = pixel
+        hist[h, s, v] += 1
+
+    print(hist)
+    
+    return hist
+
+
+@app.post("/scd/")
+async def scd(request: ImageRequest):
+
+    response = requests.get(request.image_url)
+    response.raise_for_status()
+
+    image_data = response.content
+
+    np_arr = np.frombuffer(image_data, np.uint8)
+    image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+    # Step 1: Quantize the HSV image
+    quantized_hsv_image = quantize_hsv(image)
+
+    # Step 2: Compute the histogram
+    histogram = compute_histogram(quantized_hsv_image)

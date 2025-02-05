@@ -2,7 +2,6 @@ import * as d3 from "d3";
 
 export function drawImageGrid(containerId, selectedImage) {
   console.log("drawImageGrid");
-  console.log("selectedImage", selectedImage);
   // Clear any existing content
   d3.select(containerId).selectAll("*").remove();
 

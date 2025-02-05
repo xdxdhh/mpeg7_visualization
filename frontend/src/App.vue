@@ -36,50 +36,54 @@
         <div>
           The
           <span style="font-weight: bold">Dominant Color Descriptor (DCD) </span
-          >is one of the key (and also the simplest ones) image descriptors
-          defined in MPEG-7. It focuses on identifying the most significant
-          colors in the image and //representing the color distribution//.
+          >is one of the simplest yet key image descriptors defined in MPEG-7.
+          It focuses on identifying the most significant colors in the image and
+          analyzing their distribution.
         </div>
         <div>
           Each pixel in the image is represented by its
           <span style="font-weight: bold">RGB</span> values (Red, Green, Blue),
-          which range from 0 to 255. These three values together form a single
-          point in the 3D RGB color space.
+          with each channel ranging from 0 to 255. Together, these three values
+          define a single point in the 3D RGB color space.
         </div>
         <div id="pixel"></div>
         <div>
-          The entire image is made up of a large number of pixels (in our case
-          of 400 x 257 image it comes to 102800 pixels). If you imagine every
-          pixel's color as a point in 3D space, the entire image forms a cloud
-          of points in this RGB space.
+          The entire image consists of a large number of pixels. For instance,
+          the images used on this webpage have dimensions of 384x256, resulting
+          in 98,304 pixels. If you imagine each pixel's color as a point in 3D
+          space, the entire image forms a cloud of points within the RGB color
+          space.
         </div>
         <div id="rgb3d"></div>
         <div>
-          //This space is then clustered into a given number of clusters.// To
-          identify the dominant colors, we need to group similar colors
+          To identify the dominant colors, we need to group similar colors
           together. This is done using a technique called clustering. Clustering
-          algorithms group the pixels into a fixed number of so called clusters,
-          based on their color similarity. //chci rict se space je clustere
+          algorithms group the pixels into a fixed number of so-called clusters,
+          based on their color similarity.
         </div>
-        <div id="rgb3d-circles" class="test2"></div>
+        <div id="rgb3d-circles"></div>
         <div>
           From each cluster, one 'average' pixel is created, this pixel is
           called the
           <span style="font-weight: bold">centroid</span> of the cluster and it
           captures the "average" color of all the pixels that belong to that
-          cluster. These average colors are then used to form the Dominant Color
-          Descriptor (DCD).
+          cluster.
         </div>
         <div id="avg-pixel"></div>
-        This is done for all the clusters, and the average colors then form the
-        Visual Color Descriptor. The importance of the cluster is determined by
-        the number of pixels it contains.
-        <div>obrazek example color descriptoru</div>
+
         <div>
-          We can usually choose the number of clusters we want to group the
-          points into. The more clusters, the more detailed the descriptor.
+          This is done for all the clusters, and the average colors then form
+          the Visual Color Descriptor. The importance of the cluster is
+          determined by the number of pixels it contains. We can usually choose
+          the number of clusters we want to group the points into. The more
+          clusters, the more detailed the descriptor.
         </div>
         <p class="medium">Try it with your image.</p>
+        <img
+          v-if="selectedImage !== null"
+          :src="images[selectedImage].src"
+          :alt="images[selectedImage].alt"
+        />
         <!-- Slider for selecting number of clusters -->
         <div>
           <input
@@ -93,15 +97,11 @@
           />
         </div>
         <div>Number of Clusters: {{ numberOfClusters }}</div>
-        <img
-          v-if="selectedImage !== null"
-          :src="images[selectedImage].src"
-          :alt="images[selectedImage].alt"
-        />
         <div id="dominant-colors"></div>
         <div>
           We can then reconstruct the image using only the dominant colors by
-          assigning each pixel to the closest centroid.
+          assigning each pixel to the closest centroid. In general, 8 clusters
+          is considered a good enough approximation of the image.
         </div>
       </div>
       <img id="reconstructedDominant" />
@@ -133,6 +133,7 @@
         <div>
           The number of pixels that belong to each bin then form a histogram.
         </div>
+        <div id="scd-histogram"></div>
         <div>
           Use the Haar Wavelet Transform to decompose the histogram. The
           transformation captures both low-frequency (overall color
@@ -146,27 +147,27 @@
       </div>
       <div v-if="selectedImage != null" class="cld">
         <div class="big">Color Layout Descriptor</div>
-        <div>
-          Imagine you want to describe an image not just by its colors but also
+        <div style="margin-bottom: 20px">
+          This time we want to describe an image not just by its colors but also
           by where those colors appear. For example, if you have an image of a
           sunset, you wouldn't just say "orange and blue"—you'd also want to
           capture that orange is at the bottom and blue is at the top. The
           <span style="font-weight: bold">Color Layout Descriptor</span> (CLD)
-          helps do exactly that.
+          does exactly that.
         </div>
         <div>
           Instead of analyzing every single pixel (which would be too much
-          data), we split the image into a grid of blocks—for example, 8x8
-          blocks. Each block represents a small region of the image. Think of
-          this like reducing an HD image into a very low-resolution version
-          where each block is a single color.
+          data), we split the image into a grid of (in this case) 8x8 blocks.
+          Each block represents a small region of the image.
         </div>
         <div id="image-grid"></div>
         <div>
           For each block, we calculate the average color—essentially compressing
           all the pixels in the block into a single color value. So, if a block
           contains mostly shades of blue, we replace it with a single average
-          blue color. The selection results in a tiny image icon of size TODO.
+          blue color. Think of this like reducing an HD image into a very
+          low-resolution version where each block is a single color.The
+          selection results in a tiny image icon of size 12 x 8 pixels.
         </div>
         <img id="gridAvg" />
         <div>
@@ -194,6 +195,7 @@
           scanning ilustrace TODO. Then, the more coefficients we keep, the more
           detailed the descriptor will be.
         </div>
+        <div id="zigzag"></div>
         <div>
           <input
             class="slider"
@@ -215,6 +217,7 @@
           multiple images between themselves.
         </div>
       </div>
+      <div>Sources</div>
     </main>
   </div>
 </template>
@@ -228,6 +231,8 @@ import { draw3Drgb } from "@/scripts/draw3Drgb";
 import { drawPixelCircle } from "./scripts/drawPixelCircle";
 import { drawDominantColors } from "./scripts/drawDominantColors";
 import { drawImageGrid } from "./scripts/drawImageGrid";
+import { drawScdHistogram } from "./scripts/drawScdHistogram";
+import { drawZigzag } from "./scripts/drawZigZag";
 
 //import cv from 'opencv.js'
 gsap.registerPlugin(ScrollTrigger);
@@ -352,6 +357,25 @@ const getColorLayoutDescriptor = () => {
     });
 };
 
+const getScdHistogram = () => {
+  console.log("getting scd histogram");
+  const src = images.value[selectedImage.value].src;
+  fetch("http://0.0.0.0:8000/scd_histogram/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image_url: src }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log(data);
+      drawScdHistogram(
+        "#scd-histogram",
+        data["histogram"],
+        data["hue_rgb_mapping"]
+      );
+    });
+};
+
 // Watch for changes in `selectedImage`
 watch(selectedImage, async (newValue) => {
   if (newValue !== null) {
@@ -364,6 +388,7 @@ watch(selectedImage, async (newValue) => {
     );
 
     drawPixel("#pixel");
+    drawZigzag("#zigzag");
     draw3Drgb("#rgb3d", false);
     draw3Drgb("#rgb3d-circles", true);
     drawPixelCircle("#avg-pixel");
@@ -380,6 +405,7 @@ watch(selectedImage, async (newValue) => {
       ),
     });
     getDominantColors();
+    getScdHistogram();
     drawImageGrid("#image-grid", images.value[selectedImage.value].src);
     await getColorLayoutDescriptor();
     getYCbCrChannels();
