@@ -57,8 +57,8 @@
         <div id="rgb3d-circles"></div>
         <div>
           From each cluster, one 'average' pixel is created, this pixel is called the
-          <span style="font-weight: bold">centroid</span> of the cluster and it captures the "average" color
-          of all the pixels that belong to that cluster.
+          <span style="font-weight: bold">centroid</span> of the cluster and it captures the average color of
+          all the pixels that belong to that cluster.
         </div>
         <div id="avg-pixel"></div>
 
@@ -96,17 +96,11 @@
       <img id="reconstructedDominant" />
       <div v-if="selectedImage != null" class="scd">
         <div class="big">Scalable Color Descriptor</div>
-        <!-- <div>
-          It's a color histogram in HSV space encoded with Haar transform.
-          Useful for image matching and retrieval based on color. tj histogram s
-          pevne definovanym poctem binu pak projde haar transform a pak si
-          vybiram kolik koeficientu chci
-        </div> -->
         <div>
           This time, the pixels are represented not in the RGB space, but in
-          <span style="font-weight: bold">HSV</span>
-          (Hue, Saturation, Value) space. Hue represents the type of color (e.g. red, green, blue), Saturation
-          represents the intensity of the color, and Value represents its brightness.
+          <span style="font-weight: bold">HSV (Hue, Saturation, Value) </span>
+          space. Hue represents the type of color (e.g. red, green, blue), Saturation represents the intensity
+          of the color, and Value represents its brightness.
         </div>
         <img
           src="./assets/hsv.svg"
@@ -116,7 +110,7 @@
           The HSV space is divided into a fixed number of bins, and each pixel is assigned to one of them,
           based on its proximity in HSV space. //The image colors are simplified into a limited set of
           representative colors in HSV space. Divide the HSV color space into predefined bins (e.g., 256, 128,
-          or 64 bins). Count the number of pixels in each bin to build a color histogram.
+          or 64 bins). Count the number of pixels belonging to each bin to build a color histogram.
         </div>
         <!-- <div>obrazek zjednoduseny na kvantizovane pixely</div> -->
         <div>The number of pixels that belong to each bin then form a histogram.</div>
@@ -147,8 +141,8 @@
           For each block, we calculate the average color—essentially compressing all the pixels in the block
           into a single color value. So, if a block contains mostly shades of blue, we replace it with a
           single average blue color. Think of this like reducing an HD image into a very low-resolution
-          version where each block is a single color.The selection results in a tiny image icon of size 12 x 8
-          pixels.
+          version where each block is a single color. The selection results in a tiny image icon of size 12 x
+          8 pixels.
         </div>
         <img id="gridAvg" />
         <div>
