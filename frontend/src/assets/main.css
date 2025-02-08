@@ -1,12 +1,5 @@
-@import './base.css';
+@import "./base.css";
 
-/* #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
-}
- */
 #app {
   display: flex;
   flex-direction: column;
@@ -15,31 +8,32 @@
   text-align: center;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 20px 20px; /* Add some padding for smaller screens */
-  max-width: 800px; /* Restrict max width */
+  padding: 20px 20px; /* padding for smaller screens */
+  max-width: 800px;
   box-sizing: border-box;
 }
 
 header {
-  font-size: 3.5rem; /* Adjust header font size */
+  font-size: 3.5rem;
   font-weight: bold;
-  margin-bottom: 20px; /* Add spacing below the header */
+  margin-bottom: 20px;
 }
 
 .big {
-  font-size: 2rem; /* Adjust header font size */
+  /* class for big headers */
+  font-size: 2rem;
   font-weight: bold;
-  margin-bottom: 20px; /* Add spacing below the header */
+  margin-bottom: 20px;
 }
 
 .medium {
-  /* text-align: right; */
+  /* class for user interactions */
   text-align: center;
   font-size: 1.2rem;
   margin-top: 10px;
   color: #555;
-  width: 100%; /* Ensure it takes up the full width */
-  display: block; /* Ensure it's a block-level element */
+  width: 100%;
+  display: block;
   margin-bottom: 20px;
 }
 
@@ -48,30 +42,28 @@ main {
   line-height: 1.6; /* Improve readability */
 }
 
-/* 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
+.slider {
+  height: 10px;
+  width: 50%;
+  background: rgb(212, 212, 212); /* grey track */
+  border-radius: 9px;
+  outline: none;
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: black;
+  border-radius: 50%;
+  cursor: pointer;
 }
 
-@media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
-
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
-} */
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: black;
+  border-radius: 50%;
+  cursor: pointer;
+}

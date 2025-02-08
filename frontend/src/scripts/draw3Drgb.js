@@ -72,34 +72,25 @@ export function draw3Drgb(containerId, drawCircles) {
   if (drawCircles) {
     svg
       .append("circle")
-      .attr("cx", 110) // Center x
-      .attr("cy", 250) // Center y
+      .attr("cx", 300) // Center x
+      .attr("cy", 190) // Center y
       .attr("r", 35) // Radius
-      .attr("fill", "blue") // Fill color
       .attr("stroke", "black") // Stroke color
-      .attr("stroke-width", 2) // Stroke width
+      .attr("fill", "none") // Fill color
+      .attr("stroke-width", 3) // Stroke width
   }
 
   // Add points in the pseudo-3D space
   const points = [
     { x: 50, y: -30, z: 20, color: "#320014" },
-    { x: 150, y: 10, z: 0, color: "red" }, // Red
-    { x: 120, y: 30, z: 0, color: "#FA6400" }, // red-orange
-    { x: 110, y: -30, z: 10, color: "#FA6464" }, // red-orange
-    { x: 70, y: 16, z: 10, color: "#966400" }, // red-orange
-    /*{ x: 100, y: -20, z: 70, color: '#641446' }, // Purple
-    { x: -50, y: -40, z: 80, color: '#322850' }, // Dark blue-purple
-    { x: 150, y: 150, z: 150, color: '#969696' }, // Grey
-    { x: 30, y: 20, z: 10, color: 'pink' }, // Pink
-    { x: -60, y: 70, z: 30, color: '#00FF00' }, // Bright green
-    //{ x: 90, y: -10, z: 40, color: '#00FF88' }, // Mint green
-    { x: -120, y: -50, z: 100, color: '#FF69B4' }, // Hot pink
-    { x: 120, y: -80, z: 70, color: '#B22222' }, // Firebrick red
-    { x: -80, y: 30, z: 90, color: '#228B22' }, // Forest green
-    { x: 140, y: -90, z: 50, color: '#8A2BE2' }, // Blue-violet
-    { x: 60, y: 60, z: 20, color: '#FFB6C1' }, // Light pink
-    { x: -100, y: 20, z: 120, color: '#7FFF00' }, // Chartreuse green
-    { x: 200, y: -150, z: 100, color: '#FFD700' }, // Gold */
+    { x: 120, y: 10, z: 0, color: "red" }, // Red
+    { x: 100, y: 30, z: 0, color: "#FA6400" }, // orange
+    { x: 90, y: 0, z: 10, color: "#FA6464" }, // pinkish
+    { x: 80, y: 16, z: 10, color: "#966400" }, // red-orange
+    { x: 20, y: 120, z: 10, color: "green" },
+    { x: -20, y: 90, z: 20, color: "#2a673d" },
+    { x: -60, y: -20, z: 20, color: "#2a6367" },
+    { x: 30, y: -50, z: 20, color: "purple" },
   ]
 
   points.forEach((point) => {

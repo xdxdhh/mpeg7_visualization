@@ -29,7 +29,7 @@
       source: Unsplash Gallery
       <div v-if="selectedImage != null" class="dig-in">Let's dig in.</div>
       <!-- <div>Let's start with the simplest one.</div> -->
-      <div v-if="selectedImage != null" class="dcd">
+      <div v-if="selectedImage != null">
         <div class="big">Dominant Color Descriptor</div>
         <div>
           The
@@ -44,7 +44,7 @@
         </div>
         <div id="pixel"></div>
         <div>
-          The entire image consists of a large number of pixels. For instance, the images used on this webpage
+          The entire image consists of a large number of pixels. For instance, the images used on this page
           have dimensions of 384x256, resulting in <span style="font-weight: bold">98,304 pixels</span>. If
           you imagine each pixel's color as a point in 3D space, the entire image forms a cloud of points
           within the RGB color space.
@@ -79,7 +79,6 @@
         <div>
           <input
             class="slider"
-            id="cluster-slider"
             type="range"
             min="2"
             max="8"
@@ -91,7 +90,8 @@
         <div id="dominant-colors"></div>
         <div>
           We can then reconstruct the image using only the dominant colors by assigning each pixel to the
-          closest centroid. In general, 8 clusters is considered a good enough approximation of the image.
+          closest centroid. In general, using 8 clusters is considered a good enough approximation of the
+          image.
         </div>
       </div>
       <img id="reconstructedDominant" />
@@ -131,15 +131,14 @@
               {{ value }}
             </span>
           </div>
-          <div>Number of bins</div>
+          <div style="margin-bottom: 10px">Number of bins</div>
         </div>
-        <div>This 256-bin histogram in HSV space is then</div>
         <div>
           This 256-bin histogram in HSV space is then transformed using
           <span style="font-weight: bold">Haar Wavelet Transform</span>. This transformation captures both
           low-frequency (overall color distribution) and high-frequency (fine details) information. At the
           end, we obtain a set of coefficients that represent the image in a more compact way. We can choose
-          how many coefficients we want to keep (that's where the "scalable" part comes in).
+          how many coefficients we want to keep (that's where the 'scalable' part comes in).
         </div>
         <img
           src="./assets/scd_haar.svg"
@@ -151,15 +150,15 @@
           <span style="font-weight: bold">{{ scalableColorDescriptor }}</span>
         </div>
         <div>
-          Not very informative, right? But the more coefficients we keep, the more detailed the descriptor
-          will be. To see it, we can visualize the image reconstructed from the kept coefficients, if we used
-          Haar transform directly on the image (and not the histogram).
+          Not very informative, right? However, the more coefficients we retain, the more detailed the
+          descriptor becomes. To illustrate this, we can visualize the image reconstructed using the retained
+          coefficients—as if we had applied the Haar transform directly to the image itself rather than to the
+          histogram.
         </div>
         <div class="medium">Try it.</div>
         <div>
           <input
             class="slider"
-            id="scd-slider"
             type="range"
             min="1"
             max="50001"
@@ -183,7 +182,7 @@
           Instead of analyzing every single pixel (which would be too much data), we split the image into a
           grid of (in this case) 32&nbsp;x&nbsp;32 blocks. Each block represents a small region of the image.
         </div>
-        <div id="image-grid"></div>
+        <div id="image-grid" style="margin-top: 20px; margin-bottom: 20px"></div>
         <div>
           For each block, we calculate the average color—essentially compressing all the pixels in the block
           into a single color value. So, if a block contains mostly shades of blue, we replace it with a
@@ -191,7 +190,7 @@
           version where each block is a single color. The selection results in a tiny image icon of size
           12&nbsp;x&nbsp;8 pixels.
         </div>
-        <img id="gridAvg" />
+        <img id="gridAvg" style="margin-top: 20px; margin-bottom: 20px" />
         <div>
           Afterwards, this simplified image is transformed into
           <span style="font-weight: bold">YCbCr</span> space (yes, yet another colorspace), which separates
@@ -201,7 +200,7 @@
           blue and red chrominance components, respectively.
         </div>
         <div class="medium">See the three channels below.</div>
-        <div class="y_cb_cr_container" style="margin-bottom: 20px; margin-top: 20px">
+        <div class="y_cb_cr_container" style="margin-bottom: 30px; margin-top: 30px">
           <img class="channels_img" id="y_cb_cr_channels_y" />
           <img class="channels_img" id="y_cb_cr_channels_cb" />
           <img class="channels_img" id="y_cb_cr_channels_cr" />
@@ -218,7 +217,7 @@
           coefficients, where the low-frequency coefficients are read first, followed by the high-frequency
           ones. The path is illustrated below.
         </div>
-        <div id="zigzag"></div>
+        <div id="zigzag" style="margin-top: 20px"></div>
         <p class="medium">Let's compute the CLD for your chosen image.</p>
         <img
           v-if="selectedImage !== null"
@@ -228,7 +227,6 @@
         <div>
           <input
             class="slider"
-            id="dct-coeffs-slider"
             type="range"
             min="2"
             max="6"
@@ -240,7 +238,7 @@
         <div style="font-weight: bold">Y : {{ colorLayoutDescriptor["y"] }}</div>
         <div style="font-weight: bold">Cb : {{ colorLayoutDescriptor["cb"] }}</div>
         <div style="font-weight: bold">Cr : {{ colorLayoutDescriptor["cr"] }}</div>
-        <div>
+        <div style="margin-top: 10px">
           The biggest advantage of Color Layout Decriptor is its ability to compress the image data
           effectively. It is often used for comparing multiple images between themselves, as it encodes not
           only colors, but also their spatial distribution.
@@ -278,7 +276,6 @@ import { drawScdHistogram } from "./scripts/drawScdHistogram"
 import { drawZigzag } from "./scripts/drawZigZag"
 import { postApi } from "./api"
 
-//import cv from 'opencv.js'
 gsap.registerPlugin(ScrollTrigger)
 
 var images = ref([])
@@ -293,6 +290,8 @@ const nDctCoeffs = ref(4)
 const nScdHistBins = ref(16)
 const ScdHistValues = [16, 48, 80, 112, 144, 176, 208, 240]
 const nScdCoeffs = ref(16)
+
+const rendered = ref(false) //keeps track whether its first render
 
 const selectImage = (index) => {
   selectedImage.value = index
@@ -312,27 +311,23 @@ const fetchImages = async () => {
   console.log("Fetching images")
   // Fetch images from Unsplash API
   for (const imageId of imagesArray) {
-    //console.log(imageId)
     const response = await fetch(
       `https://api.unsplash.com/photos/${imageId}?client_id=BIQAVulO8kpvryy7H_bxLG9y3sMiJz1i3zNpN1OG8P8`
     )
     const data = await response.json()
-    const img = data.urls.raw + "&w=384&h=256&fit=crop" //resize them
-    console.log(imageId)
+    const img = data.urls.raw + "&w=384&h=256&fit=crop" //resize
     images.value.push({ src: img })
   }
 }
 
 const getDominantColorsDescriptor = async () => {
-  //get the src of selected image
-  console.log("Getting dominant colors")
+  //console.log("Getting dominant colors")
   const src = images.value[selectedImage.value].src
   const body = { image_url: src, clusters: nDomColors.value }
-  //const data = await getDominantColorsDescriptor(body)
   const data = await postApi("dominant_color", body)
   const img = document.getElementById("reconstructedDominant")
   img.src = `data:image/jpeg;base64,${data.processed_image}`
-  console.log("Dominant Colors:", data.dominant_colors)
+  //console.log("Dominant Colors:", data.dominant_colors)
   dominantColorsDescriptor.value = data.dominant_colors
   drawDominantColors("#dominant-colors", dominantColorsDescriptor.value)
 }
@@ -346,7 +341,7 @@ const getScdVisualization = async () => {
 }
 
 const getYCbCrChannels = async () => {
-  console.log("getting YCbCr channels")
+  //console.log("getting YCbCr channels")
   const src = images.value[selectedImage.value].src
   const body = { image_url: src }
   const data = await postApi("y_cb_cr_channels", body)
@@ -359,7 +354,7 @@ const getYCbCrChannels = async () => {
 }
 
 const getColorLayoutDescriptor = async () => {
-  console.log("getting color layout descriptor")
+  //console.log("getting color layout descriptor")
   const src = images.value[selectedImage.value].src
   const grid_body = { image_url: src }
   const grid_data = await postApi("color_layout_grid", grid_body)
@@ -375,7 +370,7 @@ const getColorLayoutDescriptor = async () => {
 }
 
 const getScdHistogram = async () => {
-  console.log("getting scd histogram")
+  //console.log("getting scd histogram")
   const src = images.value[selectedImage.value].src
   const body = { image_url: src, value: nScdHistBins.value }
   const data = await postApi("scd_histogram", body)
@@ -383,7 +378,7 @@ const getScdHistogram = async () => {
 }
 
 const getScalableColorDescriptor = async () => {
-  console.log("getting scalable color descriptor")
+  //console.log("getting scalable color descriptor")
   const src = images.value[selectedImage.value].src
   const body = { image_url: src }
   const data = await postApi("scalable_color_descriptor", body)
@@ -401,19 +396,16 @@ watch(selectedImage, async (newValue) => {
       { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" } // End state
     )
 
-    drawPixel("#pixel") //this does not have to be redrawn
-    drawZigzag("#zigzag")
-    draw3Drgb("#rgb3d", false)
-    draw3Drgb("#rgb3d-circles", true)
-    drawPixelCircle("#avg-pixel")
-    //processImage()
-    ScrollTrigger.create({
-      trigger: ".test2",
-      //start: 'top 20%',
-      //end: 'top 10%',
-      //scrub: false,
-      animation: gsap.fromTo(".test2", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 5 }),
-    })
+    if (rendered.value === false) {
+      // rendering for the first time
+      drawPixel("#pixel")
+      draw3Drgb("#rgb3d", false)
+      draw3Drgb("#rgb3d-circles", true)
+      drawPixelCircle("#avg-pixel")
+      drawZigzag("#zigzag")
+      rendered.value = true
+    }
+
     nDomColors.value = 3
     getDominantColorsDescriptor()
     nScdHistBins.value = 16
@@ -452,7 +444,7 @@ onMounted(() => {
   font-size: 10x;
   color: rgb(0, 0, 0);
 }
-/* Thumbnails container */
+/* thumbnails container */
 .thumbnails {
   display: flex;
   flex-wrap: wrap;
@@ -462,7 +454,7 @@ onMounted(() => {
   max-width: 850px;
 }
 
-/* Thumbnails */
+/* thumbnails */
 .thumbnails img {
   flex: 1 0 calc(25% - 10px); /* 4 images per row */
   max-width: 170px;
@@ -475,19 +467,19 @@ onMounted(() => {
   border-radius: 5px;
 }
 
-/* Highlight the selected thumbnail */
+/* highlight the selected thumbnail */
 .thumbnails img.selected {
-  transform: scale(1.1); /* Slightly enlarge the selected image */
-  border-color: #007bff; /* Add a blue border */
+  transform: scale(1.1); /* slightly enlarge */
+  border-color: #007bff;
 }
 
-/* Fade out unselected thumbnails */
+/* fade out unselected thumbnails */
 .thumbnails img.faded {
-  opacity: 0.4; /* Reduce opacity */
-  /* pointer-events: none; */ /* Disable interactions */
+  opacity: 0.4;
 }
 
 .dig-in {
+  /* Fade in animation */
   text-align: center;
   font-size: 1.5rem;
   margin-top: 20px;
@@ -495,52 +487,10 @@ onMounted(() => {
   color: #39414a;
 }
 
-#visualization {
-  display: flex;
-  justify-content: center; /* Horizontally center */
-  align-items: center; /* Vertically center */
-  height: 100px; /* Adjust height to your preference */
-  border: 1px solid #ccc; /* Optional: Add a border to see the div */
-  margin: 0 auto; /* Center horizontally in its container */
-}
-
-svg {
-  display: block;
-}
-
-.slider {
-  /* appearance: none; */ /* Remove default styling */
-  height: 10px;
-  width: 50%;
-  background: rgb(212, 212, 212); /* Grey track */
-  border-radius: 9px;
-  outline: none;
-}
-
-/* Thumb (for Chrome, Safari, Edge, Opera) */
-.slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  background: black; /* Black thumb */
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-/* Thumb (for Firefox) */
-.slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  background: black;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
 .y_cb_cr_container {
-  display: flex; /* Places images side by side */
-  gap: 10px; /* Adds space between images */
-  justify-content: center; /* Center images horizontally */
+  display: flex; /*  images side by side */
+  gap: 10px; /* space between them */
+  justify-content: center; /* center horizontally */
 }
 
 .channels_img {
