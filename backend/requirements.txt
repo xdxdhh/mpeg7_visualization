@@ -4,3 +4,4 @@ numpy
 scikit-learn
 opencv-python
 types-requests
+PyWavelets

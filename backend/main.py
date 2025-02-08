@@ -5,6 +5,8 @@ import cv2
 from pydantic import BaseModel
 from sklearn.cluster import KMeans
 import base64
+import pywt
+from fastapi import Response
 
 from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
@@ -285,62 +287,104 @@ async def get_scd_histogram(request: ScdHistogramRequest):
 
     return response_data
 
-def quantize_hsv(image):
-    print("Quantize HSV")
-    # Convert image to HSV color space
-    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    
-    # Define number of bins for each channel
-    h_bins = 16
-    s_bins = 4
-    v_bins = 4
-    
-    # Quantize Hue, Saturation, and Value channels
-    h_range = 180  # Hue range (0 to 179 in OpenCV)
-    s_range = 256  # Saturation range (0 to 255 in OpenCV)
-    v_range = 256  # Value range (0 to 255 in OpenCV)
+@app.post("/scd_visualization/")
+def scalable_color_descriptor(request: ScdHistogramRequest):
+    try:
+        resp = requests.get(request.image_url)
+        resp.raise_for_status()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error downloading image: {e}")
 
-    # Quantize each channel to the defined bins
-    hsv_image[..., 0] = (hsv_image[..., 0] * h_bins / h_range).astype(np.uint8)  # Quantize Hue
-    hsv_image[..., 1] = (hsv_image[..., 1] * s_bins / s_range).astype(np.uint8)  # Quantize Saturation
-    hsv_image[..., 2] = (hsv_image[..., 2] * v_bins / v_range).astype(np.uint8)  # Quantize Value
-
-
-    return hsv_image
-
-
-def compute_histogram(quantized_hsv_image):
-    print("Compute Histogram")
-    # Flatten the image into a 1D array of pixel values (Hue, Saturation, Value)
-    height, width, _ = quantized_hsv_image.shape
-    pixels = quantized_hsv_image.reshape(-1, 3)
-
-    # Create an empty histogram (16x4x4)
-    hist = np.zeros((16, 4, 4), dtype=int)
-    
-    # Populate the histogram by iterating over each pixel
-    for pixel in pixels:
-        h, s, v = pixel
-        hist[h, s, v] += 1
-
-    print(hist)
-    
-    return hist
-
-
-@app.post("/scd/")
-async def scd(request: ImageRequest):
-
-    response = requests.get(request.image_url)
-    response.raise_for_status()
-
-    image_data = response.content
-
+    image_data = resp.content
+    num_coefficients = request.value
     np_arr = np.frombuffer(image_data, np.uint8)
     image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    if image is None:
+        raise HTTPException(status_code=400, detail="Could not decode image.")
 
-    # Step 1: Quantize the HSV image
-    quantized_hsv_image = quantize_hsv(image)
+    # process each channel independently
+    #if len(image.shape) == 2 or image.shape[2] == 1:
+    #    channels = [image]
+    #else:
+    channels = cv2.split(image)
 
-    # Step 2: Compute the histogram
-    histogram = compute_histogram(quantized_hsv_image)
+    reconstructed_channels = []
+    for ch in channels:
+        # convert the channel to float32 for wavelet
+        ch = ch.astype(np.float32)
+        # 2d haar
+        coeffs = pywt.wavedec2(ch, 'haar', level=None)
+        arr, coeff_slices = pywt.coeffs_to_array(coeffs)
+        flat_coeffs = arr.flatten()
+        # keep only first `num_coefficients`
+        truncated_flat = np.zeros_like(flat_coeffs)
+        truncated_flat[:num_coefficients] = flat_coeffs[:num_coefficients]
+        # reshape the truncated array back to the original coefficient array shape
+        truncated_arr = truncated_flat.reshape(arr.shape)
+        # convert the truncated array back to the coefficients list format
+        new_coeffs = pywt.array_to_coeffs(truncated_arr, coeff_slices, output_format='wavedec2')
+        # reconstruct the channel from the truncated coefficients
+        approx_ch = pywt.waverec2(new_coeffs, 'haar')
+        # crop if needed
+        approx_ch = approx_ch[:ch.shape[0], :ch.shape[1]]
+        # adjust pixel values to [0, 255] and convert to uint8
+        approx_ch = np.clip(approx_ch, 0, 255).astype(np.uint8)
+        reconstructed_channels.append(approx_ch)
+
+    # Merge channels back (if more than one channel).
+    #if len(reconstructed_channels) == 1:
+    #    approx_image = reconstructed_channels[0]
+    #else:
+
+    approx_image = cv2.merge(reconstructed_channels)
+
+    _, buffer = cv2.imencode('.jpg', approx_image)
+    image_base64 = base64.b64encode(buffer).decode('utf-8')
+    response_data = {
+            "processed_image": image_base64
+        }
+
+    return response_data
+
+
+@app.post("/scalable_color_descriptor/")
+def compute_scd(request: ImageRequest):
+    try:
+        resp = requests.get(request.image_url)
+        resp.raise_for_status()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error downloading image: {e}")
+
+    image_data = resp.content
+    np_arr = np.frombuffer(image_data, np.uint8)
+    image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    if image is None:
+        raise HTTPException(status_code=400, detail="Could not decode image.")
+    hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    # hue: 16 bins in [0, 180]
+    # saturation: 4 bins in [0, 256]
+    # value: 4 bins in [0, 256]
+    h_bins = np.linspace(0, 180, 17)  # 17 edges -> 16 bins
+    s_bins = np.linspace(0, 256, 5)   # 5 edges -> 4 bins
+    v_bins = np.linspace(0, 256, 5)   # 5 edges -> 4 bins
+    bins = [h_bins, s_bins, v_bins]
+
+    # reshape pixels
+    pixels = hsv_image.reshape(-1, 3)
+    hist, _ = np.histogramdd(pixels, bins=bins)
+    hist_flat = hist.flatten()
+
+    # normalize histogram
+    if hist_flat.sum() != 0:
+        hist_flat = hist_flat / hist_flat.sum()
+
+    # apply haar
+    coeffs = pywt.wavedec(hist_flat, 'haar', level=None)
+    flat_coeffs = np.concatenate([c.flatten() for c in coeffs])
+
+    # apply non-linear quantization here.
+    # in this case only round to 4 decimal places
+    quantized_coeffs = np.round(flat_coeffs, decimals=4)
+
+    return {"scalable_color_descriptor": quantized_coeffs.tolist()[0:6]}

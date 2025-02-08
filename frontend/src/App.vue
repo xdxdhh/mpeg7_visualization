@@ -109,12 +109,11 @@
         />
         <div>
           The HSV space is divided into a fixed number of bins, and each pixel is assigned to one of them,
-          based on its proximity in HSV space. Divide the HSV color space into predefined bins (e.g., 256,
-          128, or 64 bins). Count the number of pixels belonging to each bin to build a color histogram.
-          Usually Hue is quantized into 16 bins, Saturation and Value into 4 bins each. The number of pixels
-          that belong to each bin then form a histogram.
+          based on its proximity in HSV space. Usually Hue is quantized into 16 bins, Saturation and Value
+          into 4 bins each, getting a total number of 256 bins. The number of pixels that belong to each bin
+          then form a histogram.
         </div>
-        <div class="medium">You can see the histogram of quantization of Hue in your image below.</div>
+        <div class="medium">You can see the histogram for Hue in your image below.</div>
         <div id="scd-histogram"></div>
         <div class="slider-container">
           <input
@@ -133,17 +132,44 @@
             </span>
           </div>
           <div>Number of bins</div>
-          <div>{{ nScdHistBins }}</div>
+        </div>
+        <div>This 256-bin histogram in HSV space is then</div>
+        <div>
+          This 256-bin histogram in HSV space is then transformed using
+          <span style="font-weight: bold">Haar Wavelet Transform</span>. This transformation captures both
+          low-frequency (overall color distribution) and high-frequency (fine details) information. At the
+          end, we obtain a set of coefficients that represent the image in a more compact way. We can choose
+          how many coefficients we want to keep (that's where the "scalable" part comes in).
+        </div>
+        <img
+          src="./assets/scd_haar.svg"
+          style="width: 500px; height: auto; margin-bottom: 20px; margin-top: 20px"
+        />
+
+        <div class="medium">Here you see the first 6 coefficients for your image.</div>
+        <div style="margin-bottom: 20px">
+          <span style="font-weight: bold">{{ scalableColorDescriptor }}</span>
         </div>
         <div>
-          Use the <span style="font-weight: bold">Haar Wavelet Transform</span> to decompose the histogram.
-          The transformation captures both low-frequency (overall color distribution) and high-frequency (fine
-          details) information.
+          Not very informative, right? But the more coefficients we keep, the more detailed the descriptor
+          will be. To see it, we can visualize the image reconstructed from the kept coefficients, if we used
+          Haar transform directly on the image (and not the histogram).
         </div>
+        <div class="medium">Try it.</div>
         <div>
-          The wavelet coefficients are quantized to reduce storage size. The descriptor can be encoded at
-          different levels of detail (scalable representation).
+          <input
+            class="slider"
+            id="scd-slider"
+            type="range"
+            min="1"
+            max="50001"
+            step="1000"
+            v-model="nScdCoeffs"
+            @input="getScdVisualization"
+          />
         </div>
+        <!-- <div>Number of Coefficients: {{ nScdCoeffs }}</div> -->
+        <img id="scdVisualization" />
       </div>
       <div v-if="selectedImage != null" class="cld">
         <div class="big">Color Layout Descriptor</div>
@@ -155,7 +181,7 @@
         </div>
         <div>
           Instead of analyzing every single pixel (which would be too much data), we split the image into a
-          grid of (in this case) 8x8 blocks. Each block represents a small region of the image.
+          grid of (in this case) 32&nbsp;x&nbsp;32 blocks. Each block represents a small region of the image.
         </div>
         <div id="image-grid"></div>
         <div>
@@ -168,12 +194,13 @@
         <img id="gridAvg" />
         <div>
           Afterwards, this simplified image is transformed into
-          <span style="font-weight: bold">YCbCr</span> space, which separates brightness (luma) from color
-          (chroma). This color space was developed in the era of first color TVs for backward compatibility
-          with black and white TVs, allowing older TVs to ignore the color information. The Y channel
-          represents the grayscale version of the image, while Cb and Cr store the blue and red chrominance
-          components, respectively. You can see the three channels below.
+          <span style="font-weight: bold">YCbCr</span> space (yes, yet another colorspace), which separates
+          brightness (luma) from color (chroma). This color space was developed in the era of first color TVs
+          for backwards compatibility with black and white TVs, allowing older TVs to ignore the color
+          information. The Y channel represents the grayscale version of the image, while Cb and Cr store the
+          blue and red chrominance components, respectively.
         </div>
+        <div class="medium">See the three channels below.</div>
         <div class="y_cb_cr_container" style="margin-bottom: 20px; margin-top: 20px">
           <img class="channels_img" id="y_cb_cr_channels_y" />
           <img class="channels_img" id="y_cb_cr_channels_cb" />
@@ -183,12 +210,15 @@
           After getting the representation in YCbCr space, we apply the
           <span style="font-weight: bold">Discrete Cosine Transform (DCT)</span>
           to the YCbCr image. The DCT is a mathematical technique that transforms the image into a three sets
-          of 64 TODO DCT coefficients (stejny rozmer jako ten orbazek). A zigzag scanning is performed with
-          these three sets of 64 DCT coefficients, following the schema presented in the figure. The purpose
-          of the zigzag scan is to group the low frequency coefficients of the 8x8 TODO matrix.
+          of 96 coefficients (depends on the dimension of the simplified image).
+        </div>
+        <div>
+          The more DCT coefficients we keep, the more detailed the descriptor will be. To choose the
+          coefficients we want to keep, zig-zag scanning is used. It is a special way of reading the
+          coefficients, where the low-frequency coefficients are read first, followed by the high-frequency
+          ones. The path is illustrated below.
         </div>
         <div id="zigzag"></div>
-        <div>The more DCT coefficients we keep, the more detailed the descriptor will be.</div>
         <p class="medium">Let's compute the CLD for your chosen image.</p>
         <img
           v-if="selectedImage !== null"
@@ -211,12 +241,26 @@
         <div style="font-weight: bold">Cb : {{ colorLayoutDescriptor["cb"] }}</div>
         <div style="font-weight: bold">Cr : {{ colorLayoutDescriptor["cr"] }}</div>
         <div>
-          The biggest advantage of DCT is its ability to compress the image data effectively. It is often used
-          for comparing multiple images between themselves, as it encodes not only colors, but also their
-          spatial distribution.
+          The biggest advantage of Color Layout Decriptor is its ability to compress the image data
+          effectively. It is often used for comparing multiple images between themselves, as it encodes not
+          only colors, but also their spatial distribution.
         </div>
       </div>
-      <div>Sources</div>
+      <div v-if="selectedImage != null" style="margin-top: 50px">
+        <div class="big" style="font-size: 1.5rem">Sources</div>
+        Haar transform image from
+        <a href="https://www.researchgate.net/publication/3308307_Color_and_Texture_Descriptors"
+          >Color and Texture Descriptors</a
+        >
+        article (I redraw it to get better quality).
+        <p>
+          Eight demonstration images are taken from the <a href="https://unsplash.com/">Unsplash gallery</a>.
+        </p>
+        <p>
+          HSV Space illustration is taken from
+          <a href="https://commons.wikimedia.org/wiki/File:Hsl-hsv_models.svg">Wikimedia Commons.</a>
+        </p>
+      </div>
     </main>
   </div>
 </template>
@@ -242,11 +286,13 @@ const selectedImage = ref(null)
 
 var colorLayoutDescriptor = ref({ y: [], cb: [], cr: [] })
 var dominantColorsDescriptor = ref([])
+var scalableColorDescriptor = ref([])
 
 const nDomColors = ref(3)
 const nDctCoeffs = ref(4)
 const nScdHistBins = ref(16)
 const ScdHistValues = [16, 48, 80, 112, 144, 176, 208, 240]
+const nScdCoeffs = ref(16)
 
 const selectImage = (index) => {
   selectedImage.value = index
@@ -291,6 +337,14 @@ const getDominantColorsDescriptor = async () => {
   drawDominantColors("#dominant-colors", dominantColorsDescriptor.value)
 }
 
+const getScdVisualization = async () => {
+  const src = images.value[selectedImage.value].src
+  const body = { image_url: src, value: nScdCoeffs.value }
+  const data = await postApi("scd_visualization", body)
+  const img = document.getElementById("scdVisualization")
+  img.src = `data:image/jpeg;base64,${data.processed_image}`
+}
+
 const getYCbCrChannels = async () => {
   console.log("getting YCbCr channels")
   const src = images.value[selectedImage.value].src
@@ -328,6 +382,14 @@ const getScdHistogram = async () => {
   drawScdHistogram("#scd-histogram", data["histogram"], nScdHistBins.value)
 }
 
+const getScalableColorDescriptor = async () => {
+  console.log("getting scalable color descriptor")
+  const src = images.value[selectedImage.value].src
+  const body = { image_url: src }
+  const data = await postApi("scalable_color_descriptor", body)
+  scalableColorDescriptor.value = data.scalable_color_descriptor
+}
+
 // Watch for changes in `selectedImage`
 watch(selectedImage, async (newValue) => {
   if (newValue !== null) {
@@ -339,7 +401,7 @@ watch(selectedImage, async (newValue) => {
       { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" } // End state
     )
 
-    drawPixel("#pixel")
+    drawPixel("#pixel") //this does not have to be redrawn
     drawZigzag("#zigzag")
     draw3Drgb("#rgb3d", false)
     draw3Drgb("#rgb3d-circles", true)
@@ -359,6 +421,8 @@ watch(selectedImage, async (newValue) => {
     drawImageGrid("#image-grid", images.value[selectedImage.value].src)
     getColorLayoutDescriptor()
     getYCbCrChannels()
+    getScalableColorDescriptor()
+    getScdVisualization()
   }
 })
 
