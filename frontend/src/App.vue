@@ -45,8 +45,9 @@
         <div id="pixel"></div>
         <div>
           The entire image consists of a large number of pixels. For instance, the images used on this webpage
-          have dimensions of 384x256, resulting in 98,304 pixels. If you imagine each pixel's color as a point
-          in 3D space, the entire image forms a cloud of points within the RGB color space.
+          have dimensions of 384x256, resulting in <span style="font-weight: bold">98,304 pixels</span>. If
+          you imagine each pixel's color as a point in 3D space, the entire image forms a cloud of points
+          within the RGB color space.
         </div>
         <div id="rgb3d"></div>
         <div>
@@ -82,11 +83,11 @@
             type="range"
             min="2"
             max="8"
-            v-model="numberOfClusters"
-            @input="getDominantColors"
+            v-model="nDomColors"
+            @input="getDominantColorsDescriptor"
           />
         </div>
-        <div>Number of Clusters: {{ numberOfClusters }}</div>
+        <div>Number of Clusters: {{ nDomColors }}</div>
         <div id="dominant-colors"></div>
         <div>
           We can then reconstruct the image using only the dominant colors by assigning each pixel to the
@@ -108,16 +109,36 @@
         />
         <div>
           The HSV space is divided into a fixed number of bins, and each pixel is assigned to one of them,
-          based on its proximity in HSV space. //The image colors are simplified into a limited set of
-          representative colors in HSV space. Divide the HSV color space into predefined bins (e.g., 256, 128,
-          or 64 bins). Count the number of pixels belonging to each bin to build a color histogram.
+          based on its proximity in HSV space. Divide the HSV color space into predefined bins (e.g., 256,
+          128, or 64 bins). Count the number of pixels belonging to each bin to build a color histogram.
+          Usually Hue is quantized into 16 bins, Saturation and Value into 4 bins each. The number of pixels
+          that belong to each bin then form a histogram.
         </div>
-        <!-- <div>obrazek zjednoduseny na kvantizovane pixely</div> -->
-        <div>The number of pixels that belong to each bin then form a histogram.</div>
+        <div class="medium">You can see the histogram of quantization of Hue in your image below.</div>
         <div id="scd-histogram"></div>
+        <div class="slider-container">
+          <input
+            type="range"
+            min="16"
+            max="240"
+            step="16"
+            v-model="nScdHistBins"
+            @input="getScdHistogram"
+            class="slider"
+            style="width: 100%"
+          />
+          <div class="tick-labels">
+            <span v-for="value in ScdHistValues" :key="value" class="tick-label">
+              {{ value }}
+            </span>
+          </div>
+          <div>Number of bins</div>
+          <div>{{ nScdHistBins }}</div>
+        </div>
         <div>
-          Use the Haar Wavelet Transform to decompose the histogram. The transformation captures both
-          low-frequency (overall color distribution) and high-frequency (fine details) information.
+          Use the <span style="font-weight: bold">Haar Wavelet Transform</span> to decompose the histogram.
+          The transformation captures both low-frequency (overall color distribution) and high-frequency (fine
+          details) information.
         </div>
         <div>
           The wavelet coefficients are quantized to reduce storage size. The descriptor can be encoded at
@@ -141,8 +162,8 @@
           For each block, we calculate the average color—essentially compressing all the pixels in the block
           into a single color value. So, if a block contains mostly shades of blue, we replace it with a
           single average blue color. Think of this like reducing an HD image into a very low-resolution
-          version where each block is a single color. The selection results in a tiny image icon of size 12 x
-          8 pixels.
+          version where each block is a single color. The selection results in a tiny image icon of size
+          12&nbsp;x&nbsp;8 pixels.
         </div>
         <img id="gridAvg" />
         <div>
@@ -181,11 +202,11 @@
             type="range"
             min="2"
             max="6"
-            v-model="dctCoeffs"
+            v-model="nDctCoeffs"
             @input="getColorLayoutDescriptor"
           />
         </div>
-        <div>Number of DCT Coefficients: {{ dctCoeffs }}</div>
+        <div>Number of DCT Coefficients: {{ nDctCoeffs }}</div>
         <div style="font-weight: bold">Y : {{ colorLayoutDescriptor["y"] }}</div>
         <div style="font-weight: bold">Cb : {{ colorLayoutDescriptor["cb"] }}</div>
         <div style="font-weight: bold">Cr : {{ colorLayoutDescriptor["cr"] }}</div>
@@ -216,11 +237,15 @@ import { drawZigzag } from "./scripts/drawZigZag"
 gsap.registerPlugin(ScrollTrigger)
 
 var images = ref([])
-var colorLayoutDescriptor = ref({ y: [], cb: [], cr: [] })
-const dominantColors = ref([])
 const selectedImage = ref(null)
-const numberOfClusters = ref(3)
-const dctCoeffs = ref(4)
+
+var colorLayoutDescriptor = ref({ y: [], cb: [], cr: [] })
+var dominantColorsDescriptor = ref([])
+
+const nDomColors = ref(3)
+const nDctCoeffs = ref(4)
+const nScdHistBins = ref(16)
+const ScdHistValues = [16, 48, 80, 112, 144, 176, 208, 240]
 
 const selectImage = (index) => {
   selectedImage.value = index
@@ -245,14 +270,13 @@ const fetchImages = async () => {
       `https://api.unsplash.com/photos/${imageId}?client_id=BIQAVulO8kpvryy7H_bxLG9y3sMiJz1i3zNpN1OG8P8`
     )
     const data = await response.json()
-    //console.log(data)
-    const img = data.urls.raw + "&w=384&h=256&fit=crop"
+    const img = data.urls.raw + "&w=384&h=256&fit=crop" //resize them
     console.log(imageId)
-    images.value.push({ src: img, alt: "Thumbnail 5" })
+    images.value.push({ src: img })
   }
 }
 
-const getDominantColors = () => {
+const getDominantColorsDescriptor = () => {
   //get the src of selected image
   console.log("Getting dominant colors")
   const src = images.value[selectedImage.value].src
@@ -260,16 +284,15 @@ const getDominantColors = () => {
   fetch("http://0.0.0.0:8000/dominant_color", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image_url: src, clusters: numberOfClusters.value }),
+    body: JSON.stringify({ image_url: src, clusters: nDomColors.value }),
   })
     .then((response) => response.json())
     .then((data) => {
-      console.log(data)
       const img = document.getElementById("reconstructedDominant")
       img.src = `data:image/jpeg;base64,${data.processed_image}`
       console.log("Dominant Colors:", data.dominant_colors)
-      dominantColors.value = data.dominant_colors
-      drawDominantColors("#dominant-colors", dominantColors.value)
+      dominantColorsDescriptor.value = data.dominant_colors
+      drawDominantColors("#dominant-colors", dominantColorsDescriptor.value)
     })
     .catch((error) => {
       console.error("Error:", error)
@@ -279,8 +302,6 @@ const getDominantColors = () => {
 const getYCbCrChannels = () => {
   console.log("getting YCbCr channels")
   const src = images.value[selectedImage.value].src
-  // use img from gridAvg element as src:
-  //const src = document.getElementById("gridAvg").src;
   fetch("http://0.0.0.0:8000/y_cb_cr_channels", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -288,7 +309,6 @@ const getYCbCrChannels = () => {
   })
     .then((response) => response.json())
     .then((data) => {
-      console.log(data)
       const img_y = document.getElementById("y_cb_cr_channels_y")
       img_y.src = `data:image/jpeg;base64,${data["y"]}`
       const img_cb = document.getElementById("y_cb_cr_channels_cb")
@@ -311,7 +331,6 @@ const getColorLayoutDescriptor = () => {
   })
     .then((response) => response.json())
     .then((data) => {
-      console.log(data)
       const img = document.getElementById("gridAvg")
       img.src = `data:image/jpeg;base64,${data.processed_image}`
     })
@@ -322,7 +341,7 @@ const getColorLayoutDescriptor = () => {
   fetch("http://0.0.0.0:8000/color_layout_descriptor", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image_url: src, dct: dctCoeffs.value }),
+    body: JSON.stringify({ image_url: src, dct: nDctCoeffs.value }),
   })
     .then((response) => response.json())
     .then((data) => {
@@ -331,7 +350,6 @@ const getColorLayoutDescriptor = () => {
       colorLayoutDescriptor.value["cb"] = data.cb
       colorLayoutDescriptor.value["cr"] = data.cr
       console.log("Color Layout Descriptor:", colorLayoutDescriptor.value)
-      //drawColorLayoutDescriptor("#color-layout-descriptor", colorLayoutDescriptor.value);
     })
 }
 
@@ -341,12 +359,12 @@ const getScdHistogram = () => {
   fetch("http://0.0.0.0:8000/scd_histogram/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image_url: src }),
+    body: JSON.stringify({ image_url: src, value: nScdHistBins.value }),
   })
     .then((response) => response.json())
     .then((data) => {
       console.log(data)
-      drawScdHistogram("#scd-histogram", data["histogram"], data["hue_rgb_mapping"])
+      drawScdHistogram("#scd-histogram", data["histogram"], nScdHistBins.value)
     })
 }
 
@@ -374,10 +392,12 @@ watch(selectedImage, async (newValue) => {
       //scrub: false,
       animation: gsap.fromTo(".test2", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 5 }),
     })
-    getDominantColors()
+    nDomColors.value = 3
+    getDominantColorsDescriptor()
+    nScdHistBins.value = 16
     getScdHistogram()
     drawImageGrid("#image-grid", images.value[selectedImage.value].src)
-    await getColorLayoutDescriptor()
+    getColorLayoutDescriptor()
     getYCbCrChannels()
   }
 })
@@ -388,6 +408,26 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.slider-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 400px;
+  margin: auto;
+}
+
+.tick-labels {
+  display: flex;
+  justify-content: space-between; /* Evenly distribute 8, 128, 256 */
+  width: 100%;
+  margin-top: 5px;
+}
+
+.tick-label {
+  font-size: 10x;
+  color: rgb(0, 0, 0);
+}
 /* Thumbnails container */
 .thumbnails {
   display: flex;
@@ -445,9 +485,9 @@ svg {
 }
 
 .slider {
-  -webkit-appearance: none; /* Remove default styling */
+  /* appearance: none; */ /* Remove default styling */
   height: 10px;
-  width: 250px;
+  width: 50%;
   background: rgb(212, 212, 212); /* Grey track */
   border-radius: 9px;
   outline: none;

@@ -25,6 +25,9 @@ async def root():
 class ImageRequest(BaseModel):
     image_url: str
 
+class ScdHistogramRequest(ImageRequest):
+    value: int
+
 class ClusterImageRequest(ImageRequest):
     clusters: int
 
@@ -251,10 +254,12 @@ async def y_cb_cr_channels(request: ImageRequest):
     return response_data
 
 @app.post("/scd_histogram/")
-async def get_scd_histogram(request: ImageRequest):
+async def get_scd_histogram(request: ScdHistogramRequest):
 
     response = requests.get(request.image_url)
     response.raise_for_status()
+
+    q = request.value
 
     image_data = response.content
 
@@ -268,22 +273,14 @@ async def get_scd_histogram(request: ImageRequest):
     hue_channel = hsv_image[:, :, 0]
 
     # 256 bin hue histogram
-    histogram = cv2.calcHist([hue_channel], [0], None, [256], [0, 256])
+    histogram = cv2.calcHist([hue_channel], [0], None, [q], [0, q])
 
     # normalize for visualization
     histogram = cv2.normalize(histogram, histogram, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
 
-    # Get the RGB value for each hue bin
-    hue_to_rgb = []
-    for hue in range(256):
-        # Convert the hue to RGB
-        rgb = cv2.cvtColor(np.uint8([[[hue, 255, 255]]]), cv2.COLOR_HSV2BGR)
-        hue_to_rgb.append(rgb[0][0].tolist())
-
     histogram_list = histogram.flatten().tolist()
     response_data = {
-        "histogram": histogram_list,
-        "hue_rgb_mapping": hue_to_rgb
+        "histogram": histogram_list
     }
 
     return response_data
