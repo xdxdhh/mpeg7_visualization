@@ -232,6 +232,7 @@ import { drawDominantColors } from "./scripts/drawDominantColors"
 import { drawImageGrid } from "./scripts/drawImageGrid"
 import { drawScdHistogram } from "./scripts/drawScdHistogram"
 import { drawZigzag } from "./scripts/drawZigZag"
+import { postApi } from "./api"
 
 //import cv from 'opencv.js'
 gsap.registerPlugin(ScrollTrigger)
@@ -276,96 +277,55 @@ const fetchImages = async () => {
   }
 }
 
-const getDominantColorsDescriptor = () => {
+const getDominantColorsDescriptor = async () => {
   //get the src of selected image
   console.log("Getting dominant colors")
   const src = images.value[selectedImage.value].src
-  console.log(src)
-  fetch("http://0.0.0.0:8000/dominant_color", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image_url: src, clusters: nDomColors.value }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      const img = document.getElementById("reconstructedDominant")
-      img.src = `data:image/jpeg;base64,${data.processed_image}`
-      console.log("Dominant Colors:", data.dominant_colors)
-      dominantColorsDescriptor.value = data.dominant_colors
-      drawDominantColors("#dominant-colors", dominantColorsDescriptor.value)
-    })
-    .catch((error) => {
-      console.error("Error:", error)
-    })
+  const body = { image_url: src, clusters: nDomColors.value }
+  //const data = await getDominantColorsDescriptor(body)
+  const data = await postApi("dominant_color", body)
+  const img = document.getElementById("reconstructedDominant")
+  img.src = `data:image/jpeg;base64,${data.processed_image}`
+  console.log("Dominant Colors:", data.dominant_colors)
+  dominantColorsDescriptor.value = data.dominant_colors
+  drawDominantColors("#dominant-colors", dominantColorsDescriptor.value)
 }
 
-const getYCbCrChannels = () => {
+const getYCbCrChannels = async () => {
   console.log("getting YCbCr channels")
   const src = images.value[selectedImage.value].src
-  fetch("http://0.0.0.0:8000/y_cb_cr_channels", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image_url: src }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      const img_y = document.getElementById("y_cb_cr_channels_y")
-      img_y.src = `data:image/jpeg;base64,${data["y"]}`
-      const img_cb = document.getElementById("y_cb_cr_channels_cb")
-      img_cb.src = `data:image/jpeg;base64,${data["cb"]}`
-      const img_cr = document.getElementById("y_cb_cr_channels_cr")
-      img_cr.src = `data:image/jpeg;base64,${data["cr"]}`
-    })
-    .catch((error) => {
-      console.error("Error:", error)
-    })
+  const body = { image_url: src }
+  const data = await postApi("y_cb_cr_channels", body)
+  const img_y = document.getElementById("y_cb_cr_channels_y")
+  img_y.src = `data:image/jpeg;base64,${data["y"]}`
+  const img_cb = document.getElementById("y_cb_cr_channels_cb")
+  img_cb.src = `data:image/jpeg;base64,${data["cb"]}`
+  const img_cr = document.getElementById("y_cb_cr_channels_cr")
+  img_cr.src = `data:image/jpeg;base64,${data["cr"]}`
 }
 
-const getColorLayoutDescriptor = () => {
+const getColorLayoutDescriptor = async () => {
   console.log("getting color layout descriptor")
   const src = images.value[selectedImage.value].src
-  fetch("http://0.0.0.0:8000/color_layout_grid", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image_url: src }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      const img = document.getElementById("gridAvg")
-      img.src = `data:image/jpeg;base64,${data.processed_image}`
-    })
-    .catch((error) => {
-      console.error("Error:", error)
-    })
+  const grid_body = { image_url: src }
+  const grid_data = await postApi("color_layout_grid", grid_body)
+  const img = document.getElementById("gridAvg")
+  img.src = `data:image/jpeg;base64,${grid_data.processed_image}`
 
-  fetch("http://0.0.0.0:8000/color_layout_descriptor", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image_url: src, dct: nDctCoeffs.value }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      console.log(data)
-      colorLayoutDescriptor.value["y"] = data.y
-      colorLayoutDescriptor.value["cb"] = data.cb
-      colorLayoutDescriptor.value["cr"] = data.cr
-      console.log("Color Layout Descriptor:", colorLayoutDescriptor.value)
-    })
+  const body = { image_url: src, dct: nDctCoeffs.value }
+  const data = await postApi("color_layout_descriptor", body)
+
+  colorLayoutDescriptor.value["y"] = data.y
+  colorLayoutDescriptor.value["cb"] = data.cb
+  colorLayoutDescriptor.value["cr"] = data.cr
 }
 
-const getScdHistogram = () => {
+const getScdHistogram = async () => {
   console.log("getting scd histogram")
   const src = images.value[selectedImage.value].src
-  fetch("http://0.0.0.0:8000/scd_histogram/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image_url: src, value: nScdHistBins.value }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      console.log(data)
-      drawScdHistogram("#scd-histogram", data["histogram"], nScdHistBins.value)
-    })
+  const body = { image_url: src, value: nScdHistBins.value }
+  const data = await postApi("scd_histogram", body)
+  drawScdHistogram("#scd-histogram", data["histogram"], nScdHistBins.value)
 }
 
 // Watch for changes in `selectedImage`
