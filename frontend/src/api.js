@@ -1,7 +1,7 @@
 import axios from "axios"
 
 const apiClient = axios.create({
-  baseURL: "http://localhost:8000/api",
+  baseURL: "https://mpeg7.diana.lumias.cz/api",
   headers: {
     "Content-Type": "application/json",
   },
