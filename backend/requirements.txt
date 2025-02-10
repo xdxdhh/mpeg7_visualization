@@ -2,6 +2,6 @@ fastapi[standard]
 requests
 numpy
 scikit-learn
-opencv-python
+opencv-python-headless
 types-requests
 PyWavelets

@@ -7,21 +7,20 @@ from sklearn.cluster import KMeans
 import base64
 import pywt
 from fastapi import Response
-
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-app = FastAPI()
 
-app.add_middleware(
+app = FastAPI()
+api = FastAPI()
+
+
+api.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # adjust for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
 
 
 class ImageRequest(BaseModel):
@@ -39,10 +38,10 @@ class ColorLayoutImageRequest(ImageRequest):
 class ClusterImageResponse(BaseModel):
     dominant_colors: list
     processed_image: str
-    
 
-@app.post("/dominant_color/")
-async def process_image(request: ClusterImageRequest) -> ClusterImageResponse:
+
+@api.post("/dominant_color")
+async def dominant_color_descriptor(request: ClusterImageRequest):
     try:
         # fetch img from url
         response = requests.get(request.image_url)
@@ -105,7 +104,7 @@ def get_average_color(block):
     return tuple(avg_color)
 
 
-@app.post("/color_layout_grid/")
+@api.post("/color_layout_grid")
 async def color_layout_descriptor_grid(request : ImageRequest):
     print("Color Layout Descriptor")
     response = requests.get(request.image_url)
@@ -170,7 +169,7 @@ def zigzag_traversal(matrix):
     return np.array(result)
 
     
-@app.post("/color_layout_descriptor/")
+@api.post("/color_layout_descriptor")
 async def color_layout_descriptor(request: ColorLayoutImageRequest):
     """ Compute the Color Layout Descriptor (CLD) for an image """
 
@@ -219,7 +218,7 @@ async def color_layout_descriptor(request: ColorLayoutImageRequest):
     
     return {"y": zigzag_Y.tolist(), "cb": zigzag_Cb.tolist(), "cr": zigzag_Cr.tolist()}
 
-@app.post("/y_cb_cr_channels/")
+@api.post("/y_cb_cr_channels")
 async def y_cb_cr_channels(request: ImageRequest):
     response = requests.get(request.image_url)
     response.raise_for_status()
@@ -255,7 +254,7 @@ async def y_cb_cr_channels(request: ImageRequest):
 
     return response_data
 
-@app.post("/scd_histogram/")
+@api.post("/scd_histogram")
 async def get_scd_histogram(request: ScdHistogramRequest):
 
     response = requests.get(request.image_url)
@@ -287,7 +286,7 @@ async def get_scd_histogram(request: ScdHistogramRequest):
 
     return response_data
 
-@app.post("/scd_visualization/")
+@api.post("/scd_visualization")
 def scalable_color_descriptor(request: ScdHistogramRequest):
     try:
         resp = requests.get(request.image_url)
@@ -302,10 +301,6 @@ def scalable_color_descriptor(request: ScdHistogramRequest):
     if image is None:
         raise HTTPException(status_code=400, detail="Could not decode image.")
 
-    # process each channel independently
-    #if len(image.shape) == 2 or image.shape[2] == 1:
-    #    channels = [image]
-    #else:
     channels = cv2.split(image)
 
     reconstructed_channels = []
@@ -331,11 +326,6 @@ def scalable_color_descriptor(request: ScdHistogramRequest):
         approx_ch = np.clip(approx_ch, 0, 255).astype(np.uint8)
         reconstructed_channels.append(approx_ch)
 
-    # Merge channels back (if more than one channel).
-    #if len(reconstructed_channels) == 1:
-    #    approx_image = reconstructed_channels[0]
-    #else:
-
     approx_image = cv2.merge(reconstructed_channels)
 
     _, buffer = cv2.imencode('.jpg', approx_image)
@@ -347,7 +337,7 @@ def scalable_color_descriptor(request: ScdHistogramRequest):
     return response_data
 
 
-@app.post("/scalable_color_descriptor/")
+@api.post("/scalable_color_descriptor")
 def compute_scd(request: ImageRequest):
     try:
         resp = requests.get(request.image_url)
@@ -388,3 +378,6 @@ def compute_scd(request: ImageRequest):
     quantized_coeffs = np.round(flat_coeffs, decimals=4)
 
     return {"scalable_color_descriptor": quantized_coeffs.tolist()[0:6]}
+
+app.mount("/api", api)
+app.mount("/", StaticFiles(directory="static", html=True), name="static")

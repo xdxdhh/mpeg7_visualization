@@ -9,7 +9,7 @@ Python functions:
 
 ### Dominant Color Descriptor
 
-**get_dominant_color**(request: ClusterImageRequest) -> ClusterImageResponse
+**dominant_color_descriptor**(request: ClusterImageRequest)
 - gets image and number of clusters
 - returns processed image colored by only the dominant colors, along with a list of dominant colors and their percentage of pixels belonging to this color.
 - uses KMeans from sklearn.cluster
